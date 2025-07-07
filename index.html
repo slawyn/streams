@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Stream Player (HLS/DASH)</title>
+
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+
+<body>
+    <h1>Dynamic HLS/DASH Stream Player</h1>
+    <div class="main-layout">
+        <div id="tileContainer">
+            <!-- Tiles will be rendered here -->
+        </div>
+        <div id="videoContainer">
+            <video id="videoPlayer" controls autoplay muted playsinline></video>
+            <div class="controls">
+                <button id="playButton">Play</button>
+                <button id="pauseButton">Pause</button>
+                <button id="muteButton">Mute/Unmute</button>
+            </div>
+            <p id="status">Loading video...</p>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
+    <script type="module" src="scripts/init.js"></script>
+</body>
+
+</html>
