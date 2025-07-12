@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function populateMediaSources() {
-        const apiPath = 'http://localhost:8080/api/streams';
+        const apiPath = 'api/streams';
         statusDiv.textContent = `Fetching stream list from ${apiPath}...`;
         mainTitle.textContent = 'Loading Streams...';
         try {

@@ -287,7 +287,7 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
 
 def test(HandlerClass=SimpleHTTPRequestHandler, ServerClass=http.server.HTTPServer):
-    server_address = ('', 8080)
+    server_address = ('', 80)
     httpd = ServerClass(server_address, HandlerClass)
     httpd.serve_forever()
     #http.server.test(HandlerClass, ServerClass)
