@@ -11,6 +11,9 @@
 
 <body>
     <h1>Dynamic HLS/DASH Stream Player</h1>
+    <button id="downloadConfig">Download Config</button>
+    <input id="filterInput" type="text" placeholder="Filter streams..." >
+    <div id="filterDropdown" ></div>
     <div class="main-layout">
         <div id="tileContainer">
             <!-- Tiles will be rendered here -->
@@ -21,6 +24,7 @@
                 <button id="playButton">Play</button>
                 <button id="pauseButton">Pause</button>
                 <button id="muteButton">Mute/Unmute</button>
+                <button id="fullscreenButton">Fullscreen</button>
             </div>
             <p id="status">Loading video...</p>
         </div>

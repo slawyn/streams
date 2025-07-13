@@ -1,6 +1,4 @@
-// update.js: Fetches stream list JSON from API and parses it
-
-export async function fetchMediaSources(apiPath) {
+export async function fetchSources(apiPath) {
     const response = await fetch(apiPath);
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status} from ${apiPath}`);
@@ -21,4 +19,31 @@ export async function fetchMediaSources(apiPath) {
         }
         return { ...entry, type };
     }).filter(source => source.type !== 'unknown');
+}
+
+function _fetchSilent(url) {
+    return new Promise((resolve) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('HEAD', url);
+        xhr.onload = () => resolve({ ok: xhr.status >= 200 && xhr.status < 400 });
+        xhr.onerror = () => resolve({ ok: false });
+        xhr.onabort = () => resolve({ ok: false });
+        xhr.send();
+    });
+}
+
+export async function isStreamAvailable(url, available) {
+    if (available) {
+        return available
+    }
+
+    try {
+        // const response = await fetch(url, { method: 'HEAD' });
+        const response = await _fetchSilent(url);
+        return response.ok;
+        // return true;
+    } catch {
+        // Error silently ignored
+        return false;
+    }
 }

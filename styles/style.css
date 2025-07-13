@@ -125,3 +125,32 @@ button:hover {
 .group-content {
     transition: display 0.2s;
 }
+
+#filterDropdown {
+    background: #111;
+    color: #eee;
+    border: 1px solid #333;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    padding: 0.3em 0;
+    z-index: 1000;
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 1em;
+}
+
+#filterDropdown div {
+    padding: 0.2em 0.8em;
+}
+
+#filterDropdown div[style*="font-weight: bold"] {
+    background: #181818;
+    color: #ffb300;
+    border-bottom: 1px solid #222;
+    padding-top: 0.5em;
+    padding-bottom: 0.2em;
+}
+
+#filterDropdown div:hover {
+    background: #222;
+}

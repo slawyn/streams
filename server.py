@@ -131,10 +131,18 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def handle_api_streams(self):
         """Parse all .m3u8 files and return JSON with entries: id, logo, group, name, link."""
+
+        config = os.path.join(os.getcwd(), "json", "config.json")
+        if os.path.exists(config):
+            with open(config, encoding="utf-8") as f:
+                data = f.read()
+            return BytesIO(data.encode("utf-8"))
+
         entries = []
-        for root, _, files in os.walk(os.getcwd()):
+        streams = os.join(os.getcwd(), "streams")
+        for root, _, files in os.walk(streams):
             for file in files:
-                if file.endswith('.m3u8'):
+                if file.endswith('.m3u') or file.endswith('.m3u8'):
                     m3u8_path = os.path.join(root, file)
                     with open(m3u8_path, encoding="utf-8") as f:
                         lines = f.readlines()
@@ -154,7 +162,7 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                             while j < len(lines):
                                 link_candidate = lines[j].strip()
                                 if link_candidate and (
-                                    (".m3u8" in link_candidate or ".mp3" in link_candidate or ".mpd" in link_candidate)
+                                    (".m3u8" in link_candidate or ".m3u" in link_candidate or ".mp3" in link_candidate or ".mpd" in link_candidate)
                                     and link_candidate.startswith("http")
                                 ):
                                     link = link_candidate
