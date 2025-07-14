@@ -137,6 +137,7 @@ button:hover {
     max-height: 300px;
     overflow-y: auto;
     font-size: 1em;
+    font-size: larger;
 }
 
 #filterDropdown div {

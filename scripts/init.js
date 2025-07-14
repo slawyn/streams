@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusDiv = document.getElementById('status');
     const downloadButton = document.getElementById('downloadConfig');
     const tileContainer = document.getElementById('tileContainer');
-    const mainTitle = document.querySelector('h1');
     const filterInput = document.getElementById('filterInput');
     const filterDropdown = document.getElementById('filterDropdown');
 
@@ -24,7 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function loadStream(dataset) {
-        mainTitle.textContent = dataset.name;
         statusDiv.textContent = `Preparing to load ${dataset.name} (${dataset.type} stream)...`;
         if (currentHlsInstanceRef.current) {
             currentHlsInstanceRef.current.destroy();
@@ -177,20 +175,17 @@ document.addEventListener('DOMContentLoaded', () => {
     async function populateSources() {
         const api = 'api/streams';
         statusDiv.textContent = `Fetching stream list from ${api}...`;
-        mainTitle.textContent = 'Loading Streams...';
 
         try {
             const sources = await fetchSources(api);
             if (sources.length === 0) {
                 statusDiv.textContent = 'No supported streams found from API.';
-                mainTitle.textContent = 'No Streams Available';
             } else {
-                mainTitle.textContent = 'Loaded Streams';
+                statusDiv.textContent = 'Loaded Streams';
                 return await renderTiles(sources);
             }
         } catch (error) {
             statusDiv.textContent = `Failed to load streams: ${error.message}. Check console.`;
-            mainTitle.textContent = 'Error Loading Streams';
         }
         return [];
     }
@@ -205,7 +200,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fullscreenButton.addEventListener('click', () => { fullscreenToggle(); });
 
-    video.addEventListener('play', () => statusDiv.textContent = 'Playing...');
+    video.addEventListener('play', () => {
+        const currentSource = 0
+        statusDiv.textContent = `Playing... ${currentSource}`;
+    });
     video.addEventListener('pause', () => statusDiv.textContent = 'Paused.');
     video.addEventListener('ended', () => statusDiv.textContent = 'Video ended.');
     video.addEventListener('volumechange', () => { muteButton.textContent = video.muted ? 'Unmute' : 'Mute'; });
@@ -285,7 +283,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         type: source.type,
                         link: source.link
                     });
-                    mainTitle.textContent = source.name;
                     // Optionally, highlight the tile if visible
                     const tile = tileContainer.querySelector(`.tile[data-link="${CSS.escape(source.link)}"]`);
                     if (tile) {
