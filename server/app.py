@@ -26,6 +26,56 @@ import json
 from io import BytesIO
 
 
+def load_file(path):
+    if os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+    else:
+        return ""
+
+def check_available_stream_files(path):
+    entries = []
+    for root, _, files in os.walk(path):
+        for file in files:
+            if file.endswith('.m3u') or file.endswith('.m3u8'):
+                m3u8_path = os.path.join(root, file)
+                with open(m3u8_path, encoding="utf-8") as f:
+                    lines = f.readlines()
+                i = 0
+                while i < len(lines):
+                    line = lines[i]
+                    if line.startswith("#EXTINF:"):
+                        tvg_id = re.search(r'tvg-id="([^"]+)"', line)
+                        tvg_logo = re.search(r'tvg-logo="([^"]+)"', line)
+                        group = re.search(r'group-title="([^"]+)"', line)
+                        # Name is after the last comma
+                        name_match = re.split(r',', line, maxsplit=1)
+                        name = name_match[1].strip() if len(name_match) > 1 else ""
+                        # Find the next non-empty line that is a link
+                        link = ""
+                        j = i + 1
+                        while j < len(lines):
+                            link_candidate = lines[j].strip()
+                            if link_candidate and (
+                                (".m3u8" in link_candidate or ".m3u" in link_candidate or ".mp3" in link_candidate or ".mpd" in link_candidate)
+                                and link_candidate.startswith("http")
+                            ):
+                                link = link_candidate
+                                break
+                            j += 1
+                        entry = {
+                            "id": tvg_id.group(1) if tvg_id else "",
+                            "logo": tvg_logo.group(1) if tvg_logo else "",
+                            "group": group.group(1) if group else "",
+                            "name": name,
+                            "link": link
+                        }
+                        # Only add if all required fields are not empty
+                        if all(entry[k] for k in ("id", "logo", "group", "name", "link")):
+                            entries.append(entry)
+                    i += 1
+    return json.dumps(entries, ensure_ascii=False)
+
 class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     server_version = "SimpleHTTPWithUpload/" + __version__
 
@@ -98,9 +148,17 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         return False, "Unexpected end of data."
 
     def send_head(self):
-        print(self.path)
         if self.path == "/api/streams":
-            return self.handle_api_streams()
+            data = load_file(os.path.join(os.getcwd(), "json", "config.json"))
+            if not data:
+                data = check_available_stream_files(os.path.join(os.getcwd(), "streams"))
+            
+            self.send_response(200)
+            self.send_header("Content-type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(data.encode("utf-8"))))
+            self.end_headers()
+            return BytesIO(data.encode("utf-8"))
+        
         path = self.translate_path(self.path)
         if os.path.isdir(path):
             if not self.path.endswith('/'):
@@ -115,75 +173,20 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                     break
             else:
                 return self.list_directory(path)
-        ctype = self.guess_type(path)
+            
         try:
             f = open(path, 'rb')
         except IOError:
             self.send_error(404, "File not found")
             return None
+        
         fs = os.fstat(f.fileno())
         self.send_response(200)
-        self.send_header("Content-type", ctype)
+        self.send_header("Content-type", self.guess_type(path))
         self.send_header("Content-Length", str(fs.st_size))
         self.send_header("Last-Modified", self.date_time_string(fs.st_mtime))
         self.end_headers()
         return f
-
-    def handle_api_streams(self):
-        """Parse all .m3u8 files and return JSON with entries: id, logo, group, name, link."""
-
-        config = os.path.join(os.getcwd(), "json", "config.json")
-        if os.path.exists(config):
-            with open(config, encoding="utf-8") as f:
-                data = f.read()
-        else:
-            entries = []
-            streams = os.join(os.getcwd(), "streams")
-            for root, _, files in os.walk(streams):
-                for file in files:
-                    if file.endswith('.m3u') or file.endswith('.m3u8'):
-                        m3u8_path = os.path.join(root, file)
-                        with open(m3u8_path, encoding="utf-8") as f:
-                            lines = f.readlines()
-                        i = 0
-                        while i < len(lines):
-                            line = lines[i]
-                            if line.startswith("#EXTINF:"):
-                                tvg_id = re.search(r'tvg-id="([^"]+)"', line)
-                                tvg_logo = re.search(r'tvg-logo="([^"]+)"', line)
-                                group = re.search(r'group-title="([^"]+)"', line)
-                                # Name is after the last comma
-                                name_match = re.split(r',', line, maxsplit=1)
-                                name = name_match[1].strip() if len(name_match) > 1 else ""
-                                # Find the next non-empty line that is a link
-                                link = ""
-                                j = i + 1
-                                while j < len(lines):
-                                    link_candidate = lines[j].strip()
-                                    if link_candidate and (
-                                        (".m3u8" in link_candidate or ".m3u" in link_candidate or ".mp3" in link_candidate or ".mpd" in link_candidate)
-                                        and link_candidate.startswith("http")
-                                    ):
-                                        link = link_candidate
-                                        break
-                                    j += 1
-                                entry = {
-                                    "id": tvg_id.group(1) if tvg_id else "",
-                                    "logo": tvg_logo.group(1) if tvg_logo else "",
-                                    "group": group.group(1) if group else "",
-                                    "name": name,
-                                    "link": link
-                                }
-                                # Only add if all required fields are not empty
-                                if all(entry[k] for k in ("id", "logo", "group", "name", "link")):
-                                    entries.append(entry)
-                            i += 1
-            data = json.dumps(entries, ensure_ascii=False)
-        self.send_response(200)
-        self.send_header("Content-type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(data.encode("utf-8"))))
-        self.end_headers()
-        return BytesIO(data.encode("utf-8"))
 
     def list_directory(self, path):
         """Helper to produce a directory listing (absent index.html).
@@ -293,15 +296,12 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     })
 
 
-def test(HandlerClass=SimpleHTTPRequestHandler, ServerClass=http.server.HTTPServer):
-    server_address = ('', 80)
-    httpd = ServerClass(server_address, HandlerClass)
+def exec(address="", port=80):
+    httpd = http.server.HTTPServer((address, port), SimpleHTTPRequestHandler)
     httpd.serve_forever()
-    #http.server.test(HandlerClass, ServerClass)
-
 
 if __name__ == '__main__':
     try:
-        test()
+        exec()
     except Exception as e:
         print(e)
