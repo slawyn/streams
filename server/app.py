@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 """Simple HTTP Server With Upload.
 
@@ -95,7 +95,7 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         """Serve a POST request."""
         r, info = self.deal_post_data()
-        print((r, info, "by: ", self.client_address))
+        print(r, info, "by: ", self.client_address)
         f = BytesIO()
         f.write(b'<!DOCTYPE html><html><title>Upload Result</title><body><h2>Upload Result</h2><hr>')
         f.write(b"<strong>Success:</strong>" if r else b"<strong>Failed:</strong>")
@@ -109,43 +109,52 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.send_header("Content-Length", str(length))
         self.end_headers()
-        self.copyfile(f, self.wfile)
-        f.close()
-
+        if f:
+            self.copyfile(f, self.wfile)
+            f.close()
+        
     def deal_post_data(self):
         content_type = self.headers.get('content-type')
         if not content_type or "boundary=" not in content_type:
             return False, "Content-Type header doesn't contain boundary"
         boundary = content_type.split("boundary=")[1].encode()
         remainbytes = int(self.headers['content-length'])
-        line = self.rfile.readline(); remainbytes -= len(line)
-        if boundary not in line:
-            return False, "Content NOT begin with boundary"
-        line = self.rfile.readline(); remainbytes -= len(line)
+        line = self.rfile.readline()
+        remainbytes -= len(line)
+        if not boundary in line:
+            return (False, "Content NOT begin with boundary")
+        line = self.rfile.readline()
+        remainbytes -= len(line)
         fn = re.findall(r'Content-Disposition.*name="file"; filename="(.*)"', line.decode())
         if not fn:
-            return False, "Can't find out file name..."
+            return (False, "Can't find out file name...")
         path = self.translate_path(self.path)
         fn = os.path.join(path, fn[0])
-        self.rfile.readline(); remainbytes -= len(line)
-        self.rfile.readline(); remainbytes -= len(line)
+        while os.path.exists(fn):
+            fn += "_"
+        line = self.rfile.readline()
+        remainbytes -= len(line)
+        line = self.rfile.readline()
+        remainbytes -= len(line)
         try:
             out = open(fn, 'wb')
         except IOError:
-            return False, "Can't create file to write, do you have permission to write?"
-        preline = self.rfile.readline(); remainbytes -= len(preline)
+            return (False, "Can't create file to write, do you have permission to write?")
+                
+        preline = self.rfile.readline()
+        remainbytes -= len(preline)
         while remainbytes > 0:
-            line = self.rfile.readline(); remainbytes -= len(line)
+            line = self.rfile.readline()
+            remainbytes -= len(line)
             if boundary in line:
                 preline = preline.rstrip(b'\r\n')
                 out.write(preline)
                 out.close()
-                return True, f"File '{fn}' upload success!"
+                return (True, "File '%s' upload success!" % fn)
             else:
                 out.write(preline)
                 preline = line
-        out.close()
-        return False, "Unexpected end of data."
+        return (False, "Unexpect Ends of data.")
 
     def send_head(self):
         if self.path == "/api/streams":
