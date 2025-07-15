@@ -1,14 +1,14 @@
 package com.example.launcher
 
+import PlayerFragment
+import android.app.FragmentManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
+import android.widget.GridLayout
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -22,6 +22,7 @@ import okhttp3.ResponseBody
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
+
 
 interface ApiService {
     @GET("api/streams")
@@ -48,31 +49,47 @@ object RetrofitClient {
     }
 }
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.main)
 
         val myButton = findViewById<Button>(R.id.myButton)
+        val myGrid = findViewById<GridLayout>(R.id.myGrid)
         myButton.setOnClickListener {
             Toast.makeText(this, "Button clicked!", Toast.LENGTH_SHORT).show()
+
             lifecycleScope.launch {
                 try {
                     val rawResponse = RetrofitClient.apiService.getStreamsRaw()
                     val json = rawResponse.string()
-                    Log.d("JSON", "${json}")
                     val type = object : TypeToken<List<StreamResponse>>() {}.type
                     val streams: List<StreamResponse> = Gson().fromJson(json, type)
 
-                    streams.forEach {
-                        Log.d("STREAM", "${it.name} → ${it.link}")
+                    streams.forEach { stream ->
+                        val streamView = Button(myGrid.context).apply {
+                            text = stream.name
+                            layoutParams = GridLayout.LayoutParams().apply {
+                                width = GridLayout.LayoutParams.WRAP_CONTENT
+                                height = GridLayout.LayoutParams.WRAP_CONTENT
+
+                                // Optional: span across more columns or rows
+                                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                                rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                                setMargins(8, 8, 8, 8)
+                            }
+                            setOnClickListener {
+                                val playerFragment = PlayerFragment.newInstance(stream.link)
+                                playerFragment.show(supportFragmentManager, "PlayerFragment")
+                            }
+                        }
+                        myGrid.addView(streamView)
                     }
 
                 } catch (e: Exception) {
                     Log.e("API_ERROR", e.message ?: "Unknown error")
                 }
             }
-
         }
     }
 }
