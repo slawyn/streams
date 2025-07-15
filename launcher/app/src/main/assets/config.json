@@ -1,0 +1,56 @@
+[
+  {
+    "id": "НТВ",
+    "logo": "images/НТВ.png",
+    "group": "Общественные",
+    "name": "НТВ",
+    "link": "https://streaming.thestream.cyou/live/213-req_offset_28000000-req_window_0-2k_v5.m3u8",
+    "type": "hls",
+    "available": true
+  },
+  {
+    "id": "Первый_канал",
+    "logo": "images/Первый_канал.png",
+    "group": "Общественные",
+    "name": "1 Первый канал",
+    "link": "https://streaming.thestream.cyou/live/210-req_offset_28000000-req_window_0-2k_v5.m3u8",
+    "type": "hls",
+    "available": true
+  },
+  {
+    "id": "tvcentr",
+    "logo": "https://iptvx.one/picons/tvcentr.png",
+    "group": "Общественные",
+    "name": "ТВ Центр (FWVGA)",
+    "link": "http://tvc-hls.cdnvideo.ru/tvc-res/smil:vd9221_2.smil/playlist.m3u8",
+    "type": "hls",
+    "available": true
+  },
+    {
+    "id": "360-podmoskovie",
+    "logo": "https://iptvx.one/picons/360-podmoskovie.png",
+    "group": "Общественные",
+    "name": "360° (HD ready)",
+    "link": "https://live-vgtrksmotrim.cdnvideo.ru/vgtrksmotrim/smotrim-live-04-srt.smil/playlist.m3u8",
+    "type": "hls",
+    "available": true
+  },
+  {
+    "id": "tv-brics",
+    "logo": "https://iptvx.one/picons/tv-brics.png",
+    "group": "Общественные",
+    "name": "TV BRICS (HD)",
+    "link": "http://rusbrics.mediacdn.ru/cdn/brics/russian/playlist_hdhigh.m3u8",
+    "type": "hls",
+    "available": true
+  },
+    {
+    "id": "domashny",
+    "logo": "https://iptvx.one/picons/domashny.png",
+    "group": "Развлекательные",
+    "name": "Домашний (HD)",
+    "link": "http://serv25.vintera.tv:8081/kaleidoscop/kaleidoscop_sd/playlist.m3u8",
+    "type": "hls",
+    "available": true
+  }
+]

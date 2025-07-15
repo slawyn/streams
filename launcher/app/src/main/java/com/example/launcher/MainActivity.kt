@@ -48,11 +48,9 @@ object RetrofitClient {
             .build()
             .create(ApiService::class.java)
     }
-    fun getBaseUrl(): String
-    {
+    fun getBaseUrl(): String {
         return BASE_URL
     }
-
 }
 
 class MainActivity : AppCompatActivity() {
@@ -63,42 +61,54 @@ class MainActivity : AppCompatActivity() {
         val myButton = findViewById<Button>(R.id.myButton)
         val myGrid = findViewById<GridLayout>(R.id.myGrid)
         val myTextView = findViewById<TextView>(R.id.myTextView)
-
         myTextView.text = RetrofitClient.getBaseUrl()
+
+        // 🔽 Initial load from config.json
+        val localJsonString = assets.open("config.json").bufferedReader().use { it.readText() }
+        val localType = object : TypeToken<List<StreamResponse>>() {}.type
+        val localStreams: List<StreamResponse> = Gson().fromJson(localJsonString, localType)
+        populateGrid(myGrid, localStreams)
+
+        // 🔄 Load updated streams from API on click
         myButton.setOnClickListener {
             Toast.makeText(this, "Loading streams..", Toast.LENGTH_SHORT).show()
 
             lifecycleScope.launch {
                 try {
                     val rawResponse = RetrofitClient.apiService.getStreamsRaw()
-                    val json = rawResponse.string()
-                    val type = object : TypeToken<List<StreamResponse>>() {}.type
-                    val streams: List<StreamResponse> = Gson().fromJson(json, type)
+                    val remoteJson = rawResponse.string()
+                    val remoteType = object : TypeToken<List<StreamResponse>>() {}.type
+                    val remoteStreams: List<StreamResponse> = Gson().fromJson(remoteJson, remoteType)
 
-                    streams.forEach { stream ->
-                        val streamView = Button(myGrid.context).apply {
-                            text = stream.name
-                            layoutParams = GridLayout.LayoutParams().apply {
-                                width = GridLayout.LayoutParams.WRAP_CONTENT
-                                height = GridLayout.LayoutParams.WRAP_CONTENT
-
-                                // Optional: span across more columns or rows
-                                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
-                                rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
-                                setMargins(8, 8, 8, 8)
-                            }
-                            setOnClickListener {
-                                val playerFragment = PlayerFragment.newInstance(stream.link)
-                                playerFragment.show(supportFragmentManager, "PlayerFragment")
-                            }
-                        }
-                        myGrid.addView(streamView)
-                    }
+                    // Clear old views before adding new ones
+                    myGrid.removeAllViews()
+                    populateGrid(myGrid, remoteStreams)
 
                 } catch (e: Exception) {
                     Log.e("API_ERROR", e.message ?: "Unknown error")
                 }
             }
+        }
+    }
+
+    private fun populateGrid(grid: GridLayout, streams: List<StreamResponse>) {
+        grid.removeAllViews();
+        streams.forEach { stream ->
+            val streamView = Button(grid.context).apply {
+                text = stream.name
+                layoutParams = GridLayout.LayoutParams().apply {
+                    width = GridLayout.LayoutParams.WRAP_CONTENT
+                    height = GridLayout.LayoutParams.WRAP_CONTENT
+                    columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                    rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                    setMargins(8, 8, 8, 8)
+                }
+                setOnClickListener {
+                    val playerFragment = PlayerFragment.newInstance(stream.link)
+                    playerFragment.show((grid.context as AppCompatActivity).supportFragmentManager, "PlayerFragment")
+                }
+            }
+            grid.addView(streamView)
         }
     }
 }
