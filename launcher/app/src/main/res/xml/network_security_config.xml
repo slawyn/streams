@@ -3,4 +3,9 @@
     <domain-config cleartextTrafficPermitted="true">
         <domain>192.168.0.108</domain>
     </domain-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
 </network-security-config>
