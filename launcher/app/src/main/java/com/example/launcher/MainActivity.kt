@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.GridLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
@@ -47,6 +48,11 @@ object RetrofitClient {
             .build()
             .create(ApiService::class.java)
     }
+    fun getBaseUrl(): String
+    {
+        return BASE_URL
+    }
+
 }
 
 class MainActivity : AppCompatActivity() {
@@ -56,8 +62,11 @@ class MainActivity : AppCompatActivity() {
 
         val myButton = findViewById<Button>(R.id.myButton)
         val myGrid = findViewById<GridLayout>(R.id.myGrid)
+        val myTextView = findViewById<TextView>(R.id.myTextView)
+
+        myTextView.text = RetrofitClient.getBaseUrl()
         myButton.setOnClickListener {
-            Toast.makeText(this, "Button clicked!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Loading streams..", Toast.LENGTH_SHORT).show()
 
             lifecycleScope.launch {
                 try {
