@@ -1,2 +1,2 @@
 cd server
-python server.py
+python app.py
