@@ -20,6 +20,8 @@ class PlayerFragment : DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val view = LayoutInflater.from(requireContext()).inflate(R.layout.player, null)
+        view.keepScreenOn = true;
+
         val playerView = view.findViewById<PlayerView>(R.id.playerView)
 
         player = ExoPlayer.Builder(this.requireContext()).build().apply {
@@ -29,6 +31,7 @@ class PlayerFragment : DialogFragment() {
             prepare()
             play()
         }
+
 
         val dialog = Dialog(requireContext(), android.R.style.Theme_Black_NoTitleBar_Fullscreen)
         dialog.setContentView(view)
