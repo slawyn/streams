@@ -1,14 +1,13 @@
 package com.example.launcher
 
 import PlayerFragment
-import android.app.FragmentManager
+import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
 import android.widget.GridLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +22,7 @@ import okhttp3.ResponseBody
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
+
 
 
 interface ApiService {
@@ -67,9 +67,13 @@ class MainActivity : AppCompatActivity() {
         val localJsonString = assets.open("config.json").bufferedReader().use { it.readText() }
         val localType = object : TypeToken<List<StreamResponse>>() {}.type
         val localStreams: List<StreamResponse> = Gson().fromJson(localJsonString, localType)
-        populateGrid(myGrid, localStreams)
 
-        // 🔄 Load updated streams from API on click
+        /* Load default buttons async */
+        lifecycleScope.launch {
+            populateGrid(myGrid, localStreams)
+        }
+
+        /* Load new buttons async */
         myButton.setOnClickListener {
             Toast.makeText(this, "Loading streams..", Toast.LENGTH_SHORT).show()
 
@@ -91,9 +95,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun populateGrid(grid: GridLayout, streams: List<StreamResponse>) {
-        grid.removeAllViews();
+    private suspend fun populateGrid(grid: GridLayout, streams: List<StreamResponse>) {
         streams.forEach { stream ->
+            val bitmap  = Cache.getImage(context = this@MainActivity, url = stream.logo)
+            val drawable = bitmap?.let { BitmapDrawable(resources, it) }
             val streamView = Button(grid.context).apply {
                 text = stream.name
                 layoutParams = GridLayout.LayoutParams().apply {
@@ -103,6 +108,7 @@ class MainActivity : AppCompatActivity() {
                     rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
                     setMargins(8, 8, 8, 8)
                 }
+                //setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null) // Image on top
                 setOnClickListener {
                     val playerFragment = PlayerFragment.newInstance(stream.link)
                     playerFragment.show((grid.context as AppCompatActivity).supportFragmentManager, "PlayerFragment")

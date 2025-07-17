@@ -1,18 +1,6 @@
 #!/usr/bin/env python
 
-"""Simple HTTP Server With Upload.
 
-This module builds on BaseHTTPServer by implementing the standard GET
-and HEAD requests in a fairly straightforward manner.
-
-see: https://gist.github.com/UniIsland/3346170
-"""
-
-
-__version__ = "0.1"
-__all__ = ["SimpleHTTPRequestHandler"]
-__author__ = "bones7456"
-__home_page__ = "http://li2z.cn/"
 
 import os
 import posixpath
@@ -24,7 +12,46 @@ import mimetypes
 import re
 import json
 from io import BytesIO
+from urllib.parse import urlparse
+import http.client
 
+__version__ = "0.x"
+__all__ = ["SimpleHTTPRequestHandler"]
+__author__ = ""
+__home_page__ = ""
+
+
+def is_downloadable(url):
+    try:
+        print(url)
+        parsed = urlparse(url)
+        conn_class = http.client.HTTPSConnection if parsed.scheme == "https" else http.client.HTTPConnection
+        conn = conn_class(parsed.netloc)
+        conn.request("HEAD", parsed.path or "/")
+        response = conn.getresponse()
+
+        content_type = response.getheader("Content-Type", "")
+        content_disposition = response.getheader("Content-Disposition", "")
+
+        conn.close()
+
+        if "attachment" in content_disposition.lower():
+            return True
+        if any(ct in content_type.lower() for ct in ['application/', 'image/', 'audio/', 'video/', 'octet-stream']):
+            return True
+        return False
+    except Exception as e:
+        print("Error:", e)
+        return False
+
+def write_file(path, data):
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(data)   
+        return True
+    except Exception as e:
+        print(f"Error writing file {path}: {e}")
+        return False
 
 def load_file(path):
     if os.path.exists(path):
@@ -33,7 +60,48 @@ def load_file(path):
     else:
         return ""
 
-def check_available_stream_files(path):
+import threading
+import queue
+
+def validate_confg(data):
+    validated = []
+    q = queue.Queue()
+    lock = threading.Lock()
+
+    def worker():
+        while True:
+            entry = q.get()
+            if entry is None:
+                break
+            url = entry.get("link", "")
+            entry["available"] = is_downloadable(url)
+            with lock:
+                validated.append(entry)
+            q.task_done()
+
+    # Start 10 threads
+    threads = []
+    for _ in range(10):
+        t = threading.Thread(target=worker)
+        t.start()
+        threads.append(t)
+
+    # Fill the queue
+    for entry in data:
+        q.put(entry)
+
+    # Block until all tasks are done
+    q.join()
+
+    # Stop workers
+    for _ in threads:
+        q.put(None)
+    for t in threads:
+        t.join()
+
+    return validated
+
+def create_config(path):
     entries = []
     for root, _, files in os.walk(path):
         for file in files:
@@ -74,121 +142,71 @@ def check_available_stream_files(path):
                         if all(entry[k] for k in ("id", "logo", "group", "name", "link")):
                             entries.append(entry)
                     i += 1
-    return json.dumps(entries, ensure_ascii=False)
+    return entries
 
 class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     server_version = "SimpleHTTPWithUpload/" + __version__
 
     def do_GET(self):
-        """Serve a GET request."""
-        f = self.send_head()
-        if f:
-            self.copyfile(f, self.wfile)
-            f.close()
+        self.handle_get_head()
 
     def do_HEAD(self):
-        """Serve a HEAD request."""
-        f = self.send_head()
-        if f:
-            f.close()
+        self.handle_get_head(head_only=True)
 
     def do_POST(self):
-        """Serve a POST request."""
-        r, info = self.deal_post_data()
-        print(r, info, "by: ", self.client_address)
-        f = BytesIO()
-        f.write(b'<!DOCTYPE html><html><title>Upload Result</title><body><h2>Upload Result</h2><hr>')
-        f.write(b"<strong>Success:</strong>" if r else b"<strong>Failed:</strong>")
-        f.write(info.encode())
-        referer = self.headers.get('referer', '/')
-        f.write(('<br><a href="%s">back</a>' % referer).encode())
-        f.write(b'<hr><small>Powered By: bones7456, <a href="http://li2z.cn/?s=SimpleHTTPServerWithUpload">here</a>.</small></body></html>')
-        length = f.tell()
-        f.seek(0)
-        self.send_response(200)
-        self.send_header("Content-type", "text/html")
-        self.send_header("Content-Length", str(length))
-        self.end_headers()
-        if f:
-            self.copyfile(f, self.wfile)
-            f.close()
-        
-    def deal_post_data(self):
-        content_type = self.headers.get('content-type')
-        if not content_type or "boundary=" not in content_type:
-            return False, "Content-Type header doesn't contain boundary"
-        boundary = content_type.split("boundary=")[1].encode()
-        remainbytes = int(self.headers['content-length'])
-        line = self.rfile.readline()
-        remainbytes -= len(line)
-        if not boundary in line:
-            return (False, "Content NOT begin with boundary")
-        line = self.rfile.readline()
-        remainbytes -= len(line)
-        fn = re.findall(r'Content-Disposition.*name="file"; filename="(.*)"', line.decode())
-        if not fn:
-            return (False, "Can't find out file name...")
-        path = self.translate_path(self.path)
-        fn = os.path.join(path, fn[0])
-        while os.path.exists(fn):
-            fn += "_"
-        line = self.rfile.readline()
-        remainbytes -= len(line)
-        line = self.rfile.readline()
-        remainbytes -= len(line)
-        try:
-            out = open(fn, 'wb')
-        except IOError:
-            return (False, "Can't create file to write, do you have permission to write?")
-                
-        preline = self.rfile.readline()
-        remainbytes -= len(preline)
-        while remainbytes > 0:
-            line = self.rfile.readline()
-            remainbytes -= len(line)
-            if boundary in line:
-                preline = preline.rstrip(b'\r\n')
-                out.write(preline)
-                out.close()
-                return (True, "File '%s' upload success!" % fn)
-            else:
-                out.write(preline)
-                preline = line
-        return (False, "Unexpect Ends of data.")
+        success, info = self.process_upload()
+        print(success, info, "by:", self.client_address)
+        html_body = self.render_upload_result(success, info)
+        self.send_response_page(html_body)
 
-    def send_head(self):
+    def handle_get_head(self, head_only=False):
+        f = self.get_response_file()
+        if f and not head_only:
+            self.copyfile(f, self.wfile)
+        if f:
+            f.close()
+
+    def get_response_file(self):
         if self.path == "/api/streams":
-            data = load_file(os.path.join(os.getcwd(), "json", "config.json"))
-            if not data:
-                data = check_available_stream_files(os.path.join(os.getcwd(), "streams"))
-            
-            self.send_response(200)
-            self.send_header("Content-type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(data.encode("utf-8"))))
-            self.end_headers()
-            return BytesIO(data.encode("utf-8"))
-        
+            return self.api_streams_response()
+        elif self.path == "/api/resync":
+            return self.api_resync_response()
+        return self.serve_static_or_directory()
+
+    def api_streams_response(self):
+        config_path = os.path.join(os.getcwd(), "json", "config.json")
+        stream_path = os.path.join(os.getcwd(), "streams")
+        data = load_file(config_path) or json.dumps(create_config(stream_path), ensure_ascii=False)
+
+        encoded = data.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.end_headers()
+        return BytesIO(encoded)
+    
+    def api_resync_response(self):
+        config_path = os.path.join(os.getcwd(), "json", "config.json")
+        config = create_config(os.path.join(os.getcwd(), "streams"))
+        data = json.dumps(validate_confg(config))
+        write_file(config_path, data)
+
+        encoded = data.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(encoded)))
+        self.end_headers()
+        return BytesIO(encoded)
+
+    def serve_static_or_directory(self):
         path = self.translate_path(self.path)
         if os.path.isdir(path):
-            if not self.path.endswith('/'):
-                self.send_response(301)
-                self.send_header("Location", self.path + "/")
-                self.end_headers()
-                return None
-            for index in ("index.html", "index.htm"):
-                index_path = os.path.join(path, index)
-                if os.path.exists(index_path):
-                    path = index_path
-                    break
-            else:
-                return self.list_directory(path)
-            
+            return self.handle_directory(path)
         try:
             f = open(path, 'rb')
         except IOError:
             self.send_error(404, "File not found")
             return None
-        
         fs = os.fstat(f.fileno())
         self.send_response(200)
         self.send_header("Content-type", self.guess_type(path))
@@ -197,54 +215,104 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         return f
 
-    def list_directory(self, path):
-        """Helper to produce a directory listing (absent index.html).
+    def handle_directory(self, path):
+        if not self.path.endswith('/'):
+            self.send_response(301)
+            self.send_header("Location", self.path + "/")
+            self.end_headers()
+            return None
+        for index in ("index.html", "index.htm"):
+            index_path = os.path.join(path, index)
+            if os.path.exists(index_path):
+                return open(index_path, 'rb')
+        return self.render_directory_listing(path)
 
-        Return value is either a file object, or None (indicating an
-        error).  In either case, the headers are sent, making the
-        interface the same as for send_head().
-
-        """
+    def render_directory_listing(self, path):
         try:
-            listing = os.listdir(path)
+            listing = sorted(os.listdir(path), key=str.lower)
         except OSError:
             self.send_error(404, "No permission to list directory")
             return None
-        listing.sort(key=lambda a: a.lower())
-        f = BytesIO()
         displaypath = html.escape(urllib.parse.unquote(self.path))
-        f.write(f'<!DOCTYPE html><html><title>Directory listing for {displaypath}</title>'
-                f'<body><h2>Directory listing for {displaypath}</h2><hr>'
-                '<form ENCTYPE="multipart/form-data" method="post">'
-                '<input name="file" type="file"/><input type="submit" value="upload"/></form><hr><ul>'.encode())
+        entries = []
         for name in listing:
             fullname = os.path.join(path, name)
-            displayname = linkname = name
-            # Append / for directories or @ for symbolic links
-            if os.path.isdir(fullname):
-                displayname += "/"
-                linkname += "/"
-            if os.path.islink(fullname):
-                displayname += "@"
-                # Note: a link to a directory displays with @ and links with /
-            f.write(f'<li><a href="{urllib.parse.quote(linkname)}">{html.escape(displayname)}</a>\n'.encode())
-        f.write(b"</ul><hr></body></html>")
-        length = f.tell()
-        f.seek(0)
+            suffix = "/" if os.path.isdir(fullname) else "@" if os.path.islink(fullname) else ""
+            entries.append(f'<li><a href="{urllib.parse.quote(name)}">{html.escape(name)}{suffix}</a></li>')
+        html_content = (
+            f'<!DOCTYPE html><html><title>Directory listing for {displaypath}</title>'
+            f'<body><h2>Directory listing for {displaypath}</h2><hr>'
+            f'<form enctype="multipart/form-data" method="post">'
+            f'<input name="file" type="file"/><input type="submit" value="upload"/></form><hr>'
+            f'<ul>{"".join(entries)}</ul><hr></body></html>'
+        )
+        return BytesIO(html_content.encode("utf-8"))
+
+    def process_upload(self):
+        content_type = self.headers.get('content-type')
+        if not content_type or "boundary=" not in content_type:
+            return False, "Content-Type header missing boundary"
+        boundary = content_type.split("boundary=")[1].encode()
+        remainbytes = int(self.headers['content-length'])
+
+        def readline():
+            nonlocal remainbytes
+            line = self.rfile.readline()
+            remainbytes -= len(line)
+            return line
+
+        line = readline()
+        if boundary not in line:
+            return False, "Content does not start with boundary"
+
+        line = readline()  # Content-Disposition
+        fn = re.findall(r'Content-Disposition.*name="file"; filename="(.*)"', line.decode())
+        if not fn:
+            return False, "Filename not found"
+        fn = os.path.join(self.translate_path(self.path), fn[0])
+        while os.path.exists(fn):
+            fn += "_"
+
+        readline()  # Content-Type
+        readline()  # Blank line
+
+        try:
+            out = open(fn, 'wb')
+        except IOError:
+            return False, "Cannot write file—check permissions?"
+
+        preline = readline()
+        while remainbytes > 0:
+            line = readline()
+            if boundary in line:
+                out.write(preline.rstrip(b'\r\n'))
+                out.close()
+                return True, f"File '{fn}' uploaded successfully!"
+            out.write(preline)
+            preline = line
+
+        return False, "Unexpected end of data"
+
+    def render_upload_result(self, success, info):
+        referer = self.headers.get('referer', '/')
+        body = (
+            b'<!DOCTYPE html><html><title>Upload Result</title><body><h2>Upload Result</h2><hr>'
+            + (b"<strong>Success:</strong>" if success else b"<strong>Failed:</strong>")
+            + info.encode()
+            + f'<br><a href="{referer}">back</a>'.encode()
+            + b'<hr><small>Powered By: bones7456, <a href="http://li2z.cn/?s=SimpleHTTPServerWithUpload">here</a>.</small></body></html>'
+        )
+        return body
+
+    def send_response_page(self, body):
         self.send_response(200)
         self.send_header("Content-type", "text/html")
-        self.send_header("Content-Length", str(length))
+        self.send_header("Content-Length", str(len(body)))
         self.end_headers()
-        return f
+        self.wfile.write(body)
+
 
     def translate_path(self, path):
-        """Translate a /-separated PATH to the local filename syntax.
-
-        Components that mean special things to the local file system
-        (e.g. drive or directory names) are ignored.  (XXX They should
-        probably be diagnosed.)
-
-        """
         # abandon query parameters
         path = path.split('?', 1)[0]
         path = path.split('#', 1)[0]
@@ -260,36 +328,9 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         return path
 
     def copyfile(self, source, outputfile):
-        """Copy all data between two file objects.
-
-        The SOURCE argument is a file object open for reading
-        (or anything with a read() method) and the DESTINATION
-        argument is a file object open for writing (or
-        anything with a write() method).
-
-        The only reason for overriding this would be to change
-        the block size or perhaps to replace newlines by CRLF
-        -- note however that this the default server uses this
-        to copy binary data as well.
-
-        """
         shutil.copyfileobj(source, outputfile)
 
     def guess_type(self, path):
-        """Guess the type of a file.
-
-        Argument is a PATH (a filename).
-
-        Return value is a string of the form type/subtype,
-        usable for a MIME Content-type header.
-
-        The default implementation looks the file's extension
-        up in the table self.extensions_map, using application/octet-stream
-        as a default; however it would be permissible (if
-        slow) to look inside the data to make a better guess.
-
-        """
-
         base, ext = posixpath.splitext(path)
         ext = ext.lower()
         return self.extensions_map.get(ext, self.extensions_map[''])

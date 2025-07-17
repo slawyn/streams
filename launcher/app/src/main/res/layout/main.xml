@@ -22,11 +22,16 @@
             android:layout_height="wrap_content"
             android:text="TextView" />
     </LinearLayout>
+    <ScrollView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
     <GridLayout
         android:id="@+id/myGrid"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:columnCount="2" />
-
+        android:columnCount="3" />
+    </ScrollView>
 </LinearLayout>

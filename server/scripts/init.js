@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fullscreenButton = document.getElementById('fullscreenButton');
     const statusDiv = document.getElementById('status');
     const downloadButton = document.getElementById('downloadConfig');
+    const resyncButton = document.getElementById('resyncConfig');
     const tileContainer = document.getElementById('tileContainer');
     const filterInput = document.getElementById('filterInput');
     const filterDropdown = document.getElementById('filterDropdown');
@@ -172,22 +173,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
-    async function populateSources() {
-        const api = 'api/streams';
-        statusDiv.textContent = `Fetching stream list from ${api}...`;
+    async function populateSources(resync) {
+        let api
+        if (resync) {
+            api = 'api/resync';
+            statusDiv.textContent = 'Resyncing streams...';
+        } else {
+            api = 'api/streams';
+            statusDiv.textContent = 'Loading streams...';
+        }
 
         try {
+            availableSources = [];
+            statusDiv.textContent = `Fetching stream list from ${api}...`;
             const sources = await fetchSources(api);
             if (sources.length === 0) {
                 statusDiv.textContent = 'No supported streams found from API.';
             } else {
                 statusDiv.textContent = 'Loaded Streams';
-                return await renderTiles(sources);
+                availableSources = await renderTiles(sources);
             }
         } catch (error) {
             statusDiv.textContent = `Failed to load streams: ${error.message}. Check console.`;
         }
-        return [];
     }
 
     // Player controls
@@ -311,8 +319,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Initial fetch and render
-    availableSources = populateSources();
+    populateSources();
+
+    // Event listeners for buttons
     downloadButton.addEventListener('click', () => { downloadJSON(availableSources, 'config.json'); });
+    resyncButton.addEventListener('click', () => { populateSources(true); });
 });
 
 
