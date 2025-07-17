@@ -1,0 +1,5 @@
+{
+  "loadStreamsBuffer": "Загрузить из источника",
+  "statusLoadingStreams": "Загрузка потоков...",
+  "statusUnknownError": "Неизвестная ошибка"
+}

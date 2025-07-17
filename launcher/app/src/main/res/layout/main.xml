@@ -11,13 +11,12 @@
         android:orientation="horizontal"
         android:fitsSystemWindows="true">
         <Button
-            android:id="@+id/myButton"
+            android:id="@+id/button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="start"
-            android:text="Load streams" />
+            android:layout_gravity="start" />
         <TextView
-            android:id="@+id/myTextView"
+            android:id="@+id/textView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="TextView" />
@@ -28,7 +27,7 @@
         android:layout_height="match_parent"
         android:fillViewport="true">
     <GridLayout
-        android:id="@+id/myGrid"
+        android:id="@+id/grid"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"

@@ -9,93 +9,69 @@ import android.widget.GridLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
-import com.example.launcher.ui.theme.LauncherTheme
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.launch
-import okhttp3.ResponseBody
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.GET
 
 
-
-interface ApiService {
-    @GET("api/streams")
-    suspend fun getStreamsRaw(): ResponseBody
-}
-data class StreamResponse(
-    val id: String,
-    val logo: String,
-    val group: String,
-    val name: String,
-    val link: String,
-    val type: String,
-    val available: Boolean
-)
-
-object RetrofitClient {
-    private const val BASE_URL = "http://192.168.0.108:80"
-    val apiService: ApiService by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(ApiService::class.java)
-    }
-    fun getBaseUrl(): String {
-        return BASE_URL
-    }
-}
+var LANGUAGE = Language()
+val BASE_URL = "192.168.0.108:80"
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.main)
 
-        val myButton = findViewById<Button>(R.id.myButton)
-        val myGrid = findViewById<GridLayout>(R.id.myGrid)
-        val myTextView = findViewById<TextView>(R.id.myTextView)
-        myTextView.text = RetrofitClient.getBaseUrl()
+        /* Init language */
+        LANGUAGE = Gson().fromJson(
+            assets.open("lang-ru.json").bufferedReader().use { it.readText() },
+            object: TypeToken<Language>() {}.type)
 
-        // 🔽 Initial load from config.json
-        val localJsonString = assets.open("config.json").bufferedReader().use { it.readText() }
-        val localType = object : TypeToken<List<StreamResponse>>() {}.type
-        val localStreams: List<StreamResponse> = Gson().fromJson(localJsonString, localType)
-
-        /* Load default buttons async */
-        lifecycleScope.launch {
-            populateGrid(myGrid, localStreams)
-        }
+        /* 🔽 Initial load from config.json */
+        val localStreams: List<StreamEntry> = Gson().fromJson(
+            assets.open("config.json").bufferedReader().use { it.readText() },
+            object : TypeToken<List<StreamEntry>>() {}.type)
 
         /* Load new buttons async */
-        myButton.setOnClickListener {
-            Toast.makeText(this, "Loading streams..", Toast.LENGTH_SHORT).show()
+        val grid = findViewById<GridLayout>(R.id.grid)
+
+        val textView = findViewById<TextView>(R.id.textView)
+        textView.text = BASE_URL
+
+        val button = findViewById<Button>(R.id.button)
+        button.text = LANGUAGE.loadStreamsBuffer;
+        button.setOnClickListener {
+            Toast.makeText(this, LANGUAGE.statusLoadingStreams, Toast.LENGTH_SHORT).show()
 
             lifecycleScope.launch {
                 try {
-                    val rawResponse = RetrofitClient.apiService.getStreamsRaw()
-                    val remoteJson = rawResponse.string()
-                    val remoteType = object : TypeToken<List<StreamResponse>>() {}.type
-                    val remoteStreams: List<StreamResponse> = Gson().fromJson(remoteJson, remoteType)
+                    RetrofitClient.setBaseUrl(BASE_URL)
+
+                    val response = RetrofitClient.apiService.getStreamsRaw()
+                    val streams: List<StreamEntry> = Gson().fromJson(
+                        response.string(),
+                        object : TypeToken<List<StreamEntry>>() {}.type
+                    )
 
                     // Clear old views before adding new ones
-                    myGrid.removeAllViews()
-                    populateGrid(myGrid, remoteStreams)
+                    grid.removeAllViews()
+                    populateGrid(grid, streams)
 
                 } catch (e: Exception) {
-                    Log.e("API_ERROR", e.message ?: "Unknown error")
+                    Log.e("API_ERROR", e.message ?: LANGUAGE.statusUnknownError)
                 }
             }
         }
+
+
+        lifecycleScope.launch {
+            populateGrid(grid, localStreams)
+        }
     }
 
-    private suspend fun populateGrid(grid: GridLayout, streams: List<StreamResponse>) {
+    private suspend fun populateGrid(grid: GridLayout, streams: List<StreamEntry>) {
+
         streams.forEach { stream ->
             val bitmap  = Cache.getImage(context = this@MainActivity, url = stream.logo)
             val drawable = bitmap?.let { BitmapDrawable(resources, it) }
@@ -108,7 +84,7 @@ class MainActivity : AppCompatActivity() {
                     rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
                     setMargins(8, 8, 8, 8)
                 }
-                //setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null) // Image on top
+                setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null) // Image on top
                 setOnClickListener {
                     val playerFragment = PlayerFragment.newInstance(stream.link)
                     playerFragment.show((grid.context as AppCompatActivity).supportFragmentManager, "PlayerFragment")
@@ -116,21 +92,5 @@ class MainActivity : AppCompatActivity() {
             }
             grid.addView(streamView)
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-            text = "Hello $name!",
-            modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    LauncherTheme {
-        Greeting("Android")
     }
 }
