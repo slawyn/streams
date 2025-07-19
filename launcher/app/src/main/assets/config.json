@@ -1,7 +1,34 @@
 [
   {
+    "id": "Первый_канал",
+    "logo": "https://televizor24tochka.ru/logo/100/pervyi-kanal.png",
+    "group": "Общественные",
+    "name": "Первый канал live",
+    "link": "https://streaming.thestream.cyou/live/210-req_offset_28000000-req_window_0-2k_v5.m3u8",
+    "type": "hls",
+    "available": true
+  },
+  {
+    "id": "НТВ",
+    "logo": "https://televizor24tochka.ru/logo/100/ntv.png",
+    "group": "Общественные",
+    "name": "НТВ",
+    "link": "https://streaming.thestream.cyou/live/213-req_offset_28000000-req_window_0-2k_v5.m3u8",
+    "type": "hls",
+    "available": true
+  },
+  {
+    "id": "НТВ Мир",
+    "logo": "https://rustvlive.com/images/logos_tv/ntv-mir.png",
+    "group": "Общественные",
+    "name": "НТВ Мир",
+    "link": "https://streaming.thestream.cyou/live/213-req_offset_28000000-req_window_0-3k_v5.m3u8",
+    "type": "hls",
+    "available": true
+  },
+  {
     "id": "Дом Кино",
-    "logo": "",
+    "logo": "https://televizor24tochka.ru/logo/100/dom-kino.png",
     "group": "Общественные",
     "name": "Дом Кино",
     "link": "https://streaming.thestream.cyou/live/44-req_offset_28000000-req_window_0-3k_v5.m3u8",
@@ -9,8 +36,17 @@
     "available": true
   },
   {
+    "id": "Россия РТР",
+    "logo": "https://rustvlive.com/images/logos_tv/russia-rtr.png",
+    "group": "Общественные",
+    "name": "Россия РТР ",
+    "link": "https://streaming.thestream.cyou/live/211-req_offset_28000000-req_window_0-2k_v5.m3u8",
+    "type": "hls",
+    "available": true
+  },
+  {
     "id": "Россия 1",
-    "logo": "",
+    "logo": "https://televizor24tochka.ru/logo/100/rossiya-1.png",
     "group": "Общественные",
     "name": "Россия 1 ",
     "link": "https://streaming.thestream.cyou/live/211-req_offset_28000000-req_window_0-2k_v5.m3u8",
@@ -19,7 +55,7 @@
   },
   {
     "id": "Россия K",
-    "logo": "",
+    "logo": "https://televizor24tochka.ru/logo/100/rossiya-kultura.png",
     "group": "Общественные",
     "name": "Россия K",
     "link": "https://streaming.televizor-24-tochka.ru/live/9.m3u8",
@@ -28,7 +64,7 @@
   },
   {
     "id": "Россия 24",
-    "logo": "",
+    "logo": "https://televizor24tochka.ru/logo/100/rossiya-24.png",
     "group": "Общественные",
     "name": "Россия 24",
     "link": "https://streaming.thestream.cyou/live/30-req_offset_28000000-req_window_0-3k_v5.m3u8",
@@ -36,29 +72,29 @@
     "available": true
   },
   {
-    "id": "РБК",
-    "logo": "",
+    "id": "РБК (HD)",
+    "logo": "https://rustvlive.com/images/logos_tv/rbc.png",
     "group": "Общественные",
-    "name": "РБК",
+    "name": "РБК (HD)",
     "link": "http://online.video.rbc.ru/online2/rbctv_1080p/index.m3u8",
     "type": "hls",
     "available": true
   },
   {
-    "id": "НТВ",
-    "logo": "",
+    "id": "РБК",
+    "logo": "https://rustvlive.com/images/logos_tv/rbc.png",
     "group": "Общественные",
-    "name": "НТВ",
-    "link": "https://streaming.thestream.cyou/live/213-req_offset_28000000-req_window_0-2k_v5.m3u8",
+    "name": "РБК",
+    "link": "https://online-video.rbc.ru/spb/3/chunklist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9Ny8xOS8yMDI1IDU6MjE6NDcgUE0maGFzaF92YWx1ZT1EVDQvUnFINnBNd0JPSThsN0pjeTlBPT0mdmFsaWRtaW51dGVzPTE0NDA=",
     "type": "hls",
     "available": true
   },
   {
-    "id": "Первый_канал",
-    "logo": "",
+    "id": "Карусель",
+    "logo": "https://televizor24tochka.ru/logo/100/karusel.png",
     "group": "Общественные",
-    "name": "Первый канал live",
-    "link": "https://streaming.thestream.cyou/live/210-req_offset_28000000-req_window_0-2k_v5.m3u8",
+    "name": "Карусель",
+    "link": "https://streaming.thestream.cyou/live/232-req_offset_28000000-req_window_0-3k_v5.m3u8",
     "type": "hls",
     "available": true
   },
