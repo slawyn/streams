@@ -1,7 +1,7 @@
 @echo off
 
 set CMD=%1
-set APK=%CD%\android\app\build\outputs\apk\debug\apk-debug.apk
+set APK=%CD%\android\app\build\outputs\apk\debug\app-debug.apk
 
 if "%CMD%"=="web" (
     cd web
@@ -10,7 +10,7 @@ if "%CMD%"=="web" (
 )
 
 if "%CMD%"=="upload" (
-    adb connect 192.168.0.10:5555
+    adb connect 192.168.0.102:5555
     adb install -r %APK%
     exit /b
 )
