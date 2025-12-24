@@ -1,6 +1,9 @@
 package com.example.launcher
 
 import PlayerFragment
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
+import android.animation.StateListAnimator
 import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.util.Log
@@ -84,12 +87,74 @@ class MainActivity : AppCompatActivity() {
                     rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
                     setMargins(8, 8, 8, 8)
                 }
-                setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null) // Image on top
+
+                // Make the button focusable so it can be "selected"
+                isFocusable = true
+                isFocusableInTouchMode = true
+                stateListAnimator = StateListAnimator().apply {
+
+                    // Focused OR Selected → scale up
+                    addState(
+                        intArrayOf(
+                            android.R.attr.state_focused,
+                            android.R.attr.state_selected
+                        ),
+                        AnimatorSet().apply {
+                            playTogether(
+                                ObjectAnimator.ofFloat(this@apply, "scaleX", 1.1f),
+                                ObjectAnimator.ofFloat(this@apply, "scaleY", 1.1f)
+                            )
+                            duration = 120
+                        }
+                    )
+
+                    // Focused only → scale up
+                    addState(
+                        intArrayOf(android.R.attr.state_focused),
+                        AnimatorSet().apply {
+                            playTogether(
+                                ObjectAnimator.ofFloat(this@apply, "scaleX", 1.1f),
+                                ObjectAnimator.ofFloat(this@apply, "scaleY", 1.1f)
+                            )
+                            duration = 120
+                        }
+                    )
+
+                    // Selected only → scale up
+                    addState(
+                        intArrayOf(android.R.attr.state_selected),
+                        AnimatorSet().apply {
+                            playTogether(
+                                ObjectAnimator.ofFloat(this@apply, "scaleX", 1.1f),
+                                ObjectAnimator.ofFloat(this@apply, "scaleY", 1.1f)
+                            )
+                            duration = 120
+                        }
+                    )
+
+                    // Default → scale back down
+                    addState(
+                        intArrayOf(),
+                        AnimatorSet().apply {
+                            playTogether(
+                                ObjectAnimator.ofFloat(this@apply, "scaleX", 1f),
+                                ObjectAnimator.ofFloat(this@apply, "scaleY", 1f)
+                            )
+                            duration = 120
+                        }
+                    )
+                }
+
+                setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null)
                 setOnClickListener {
                     val playerFragment = PlayerFragment.newInstance(stream.link)
-                    playerFragment.show((grid.context as AppCompatActivity).supportFragmentManager, "PlayerFragment")
+                    playerFragment.show(
+                        (grid.context as AppCompatActivity).supportFragmentManager,
+                        "PlayerFragment"
+                    )
                 }
             }
+
             grid.addView(streamView)
         }
     }
