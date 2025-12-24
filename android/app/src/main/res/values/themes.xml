@@ -2,5 +2,13 @@
 <resources>
     <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorControlHighlight">#FF0000</item> <!-- Ripple color -->
+        <item name="android:windowBackground">@color/bg_color</item>
+        <!-- Make all buttons dark blue -->
+        <item name="materialButtonStyle">@style/DarkBlueButton</item>
+        <item name="buttonStyle">@style/DarkBlueButton</item>
+    </style>
+    <style name="DarkBlueButton" parent="Widget.MaterialComponents.Button">
+        <item name="android:backgroundTint">@color/bg_color</item>
+        <item name="android:textColor">@color/white</item>
     </style>
 </resources>
