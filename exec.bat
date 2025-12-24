@@ -1,6 +1,19 @@
 @echo off
-cd server
-python app.py
+
+set CMD=%1
+set APK=%CD%\android\app\build\outputs\apk\debug\apk-debug.apk
+
+if "%CMD%"=="web" (
+    cd web
+    python app.py
+    exit /b
+)
+
+if "%CMD%"=="upload" (
+    adb connect 192.168.0.10:5555
+    adb install -r %APK%
+    exit /b
+)
 
 @REM @echo off
 @REM set SOURCE_VIDEO=
