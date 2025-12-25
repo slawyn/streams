@@ -116,7 +116,7 @@ def create_config(path):
 
     Grouping key: (name.trim(), logo, group). Each group contains:
     - logo, group, name
-    - streams: list of {link, type, available, id}
+    - streams: list of {link, available, id} (type is determined by client)
     """
     groups = {}
 
@@ -171,7 +171,6 @@ def create_config(path):
                                 }
                             stream = {
                                 "link": link,
-                                "type": detect_type(link),
                                 "available": False,
                                 "id": id_val
                             }

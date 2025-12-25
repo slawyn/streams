@@ -15,11 +15,6 @@ object StreamLoader {
 
     suspend fun loadRemote(baseUrl: String): List<StreamEntry> {
         RetrofitClient.setBaseUrl(baseUrl)
-        val response = RetrofitClient.apiService.getStreamsRaw()
-
-        return Gson().fromJson(
-            response.string(),
-            object : TypeToken<List<StreamEntry>>() {}.type
-        )
+        return RetrofitClient.apiService.getStreams()
     }
 }

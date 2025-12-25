@@ -1,5 +1,7 @@
 {
   "loadStreamsBuffer": "Загрузить из источника",
   "statusLoadingStreams": "Загрузка потоков...",
-  "statusUnknownError": "Неизвестная ошибка"
+  "statusUnknownError": "Неизвестная ошибка",
+  "selectStream": "Выберите поток",
+  "statusNoStreams": "Потоки отсутствуют"
 }

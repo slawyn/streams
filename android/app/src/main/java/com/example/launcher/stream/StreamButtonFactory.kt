@@ -1,3 +1,4 @@
+
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.animation.StateListAnimator
@@ -5,6 +6,8 @@ import android.graphics.drawable.BitmapDrawable
 import android.view.LayoutInflater
 import android.widget.Button
 import android.widget.GridLayout
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.launcher.R
 import com.example.launcher.StreamEntry
@@ -38,13 +41,34 @@ object StreamButtonFactory {
         // Apply focus animation
         button.stateListAnimator = createFocusAnimator(button)
 
-        // Click → open player
+        // Click → choose one stream (if multiple) then open player
         button.setOnClickListener {
-            val playerFragment = PlayerFragment.newInstance(stream.link)
-            playerFragment.show(
-                activity.supportFragmentManager,
-                "PlayerFragment"
-            )
+            val language = LanguageLoader.load(activity)
+            val streams = stream.streams
+            if (streams.isEmpty()) {
+                Toast.makeText(activity, language.statusNoStreams, Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            } else if (streams.size == 1) {
+                val playerFragment = PlayerFragment.newInstance(streams[0].link)
+                playerFragment.show(activity.supportFragmentManager, "PlayerFragment")
+                return@setOnClickListener
+            }
+
+            val items = streams.mapIndexed { index, s ->
+                val avail = if (s.available) "" else " (unavailable)"
+                "${s.id} $index $avail "
+            }.toTypedArray()
+
+
+            AlertDialog.Builder(activity)
+                .setTitle(language.selectStream)
+                .setItems(items) { _, which ->
+                    val selected = streams[which]
+                    val playerFragment = PlayerFragment.newInstance(selected.link)
+                    playerFragment.show(activity.supportFragmentManager, "PlayerFragment")
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
         }
 
         return button

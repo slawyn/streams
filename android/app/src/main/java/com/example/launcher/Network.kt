@@ -7,16 +7,20 @@ import retrofit2.http.GET
 
 interface ApiService {
     @GET("api/streams")
-    suspend fun getStreamsRaw(): ResponseBody
+    suspend fun getStreams(): List<StreamEntry>
 }
-data class StreamEntry(
+
+data class Stream(
     val id: String,
+    val link: String,
+    val available: Boolean
+)
+
+data class StreamEntry(
     val logo: String,
     val group: String,
     val name: String,
-    val link: String,
-    val type: String,
-    val available: Boolean
+    val streams: List<Stream>
 )
 
 object RetrofitClient {
@@ -33,6 +37,6 @@ object RetrofitClient {
             .create(ApiService::class.java)
     }
     fun getBaseUrl(): String {
-        return BASE_URL
+        return baseUrl
     }
 }

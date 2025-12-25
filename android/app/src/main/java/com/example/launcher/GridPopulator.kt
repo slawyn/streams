@@ -16,7 +16,6 @@ object GridPopulator {
         streams.forEach { stream ->
             val bitmap = Cache.getImage(activity, stream.logo)
             val drawable = bitmap?.let { BitmapDrawable(activity.resources, it) }
-
             val button = StreamButtonFactory.create(activity, grid, stream, drawable)
             grid.addView(button)
         }
