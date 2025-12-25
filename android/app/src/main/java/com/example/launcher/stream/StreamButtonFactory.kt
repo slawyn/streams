@@ -35,7 +35,7 @@ object StreamButtonFactory {
             setMargins(8, 8, 8, 8)
         }
 
-        button.text = stream.name
+        button.text = stream.name.let { if (it.length > 30) it.take(30) + "…" else it }
         button.setCompoundDrawablesWithIntrinsicBounds(null, drawable, null, null)
 
         // Apply focus animation
