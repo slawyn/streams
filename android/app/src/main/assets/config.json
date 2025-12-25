@@ -6,13 +6,11 @@
     "streams": [
       {
         "link": "https://streaming.thestream.cyou/live/210-req_offset_28000000-req_window_0-2k_v5.m3u8",
-        "type": "hls",
         "available": true,
         "id": "Первый канал"
       },
       {
         "link": "https://streaming.goodstream.icu/live/210-req_offset_28000000-req_window_0-1k_v5.m3u8",
-        "type": "hls",
         "available": true,
         "id": "Первый канал"
       }
@@ -25,19 +23,16 @@
     "streams": [
       {
         "link": "https://streaming.thestream.cyou/live/213-req_offset_28000000-req_window_0-2k_v5.m3u8",
-        "type": "hls",
         "available": true,
         "id": "НТВ"
       },
       {
         "link": "https://streaming.thestream.cyou/live/213-req_offset_28000000-req_window_0-1k_v5.m3u8",
-        "type": "hls",
         "available": true,
         "id": "НТВ"
       },
       {
         "link": "https://streaming.thestream.cyou/live/213-req_offset_28000000-req_window_0-3k_v5.m3u8",
-        "type": "hls",
         "available": true,
         "id": "НТВ"
       }
@@ -50,7 +45,6 @@
     "streams": [
       {
         "link": "https://streaming.thestream.cyou/live/44-req_offset_28000000-req_window_0-3k_v5.m3u8",
-        "type": "hls",
         "available": true,
         "id": "Дом Кино"
       }
@@ -63,13 +57,11 @@
     "streams": [
       {
         "link": "https://streaming.thestream.cyou/live/211-req_offset_28000000-req_window_0-2k_v5.m3u8",
-        "type": "hls",
         "available": true,
         "id": "Россия РТР"
       },
       {
         "link": "https://streaming.thestream.cyou/live/211-req_offset_28000000-req_window_0-1k_v5.m3u8",
-        "type": "hls",
         "available": true,
         "id": "Россия РТР"
       }
@@ -82,7 +74,6 @@
     "streams": [
       {
         "link": "https://streaming.thestream.cyou/live/211-req_offset_28000000-req_window_0-2k_v5.m3u8",
-        "type": "hls",
         "available": true,
         "id": "Россия 1"
       }
@@ -95,7 +86,6 @@
     "streams": [
       {
         "link": "https://streaming.televizor-24-tochka.ru/live/9.m3u8",
-        "type": "hls",
         "available": true,
         "id": "Россия K"
       }
@@ -108,7 +98,6 @@
     "streams": [
       {
         "link": "https://streaming.thestream.cyou/live/30-req_offset_28000000-req_window_0-3k_v5.m3u8",
-        "type": "hls",
         "available": true,
         "id": "Россия 24"
       }
@@ -121,13 +110,11 @@
     "streams": [
       {
         "link": "http://online.video.rbc.ru/online2/rbctv_1080p/index.m3u8",
-        "type": "hls",
         "available": true,
         "id": "РБК (HD)"
       },
       {
         "link": "https://online-video.rbc.ru/spb/3/chunklist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9Ny8xOS8yMDI1IDU6MjE6NDcgUE0maGFzaF92YWx1ZT1EVDQvUnFINnBNd0JPSThsN0pjeTlBPT0mdmFsaWRtaW51dGVzPTE0NDA=",
-        "type": "hls",
         "available": true,
         "id": "РБК"
       }
@@ -140,7 +127,6 @@
     "streams": [
       {
         "link": "https://streaming.thestream.cyou/live/232-req_offset_28000000-req_window_0-3k_v5.m3u8",
-        "type": "hls",
         "available": true,
         "id": "Карусель"
       }
@@ -153,7 +139,6 @@
     "streams": [
       {
         "link": "http://tvc-hls.cdnvideo.ru/tvc-res/smil:vd9221_2.smil/playlist.m3u8",
-        "type": "hls",
         "available": true,
         "id": "tvcentr"
       }
@@ -166,7 +151,6 @@
     "streams": [
       {
         "link": "https://live-vgtrksmotrim.cdnvideo.ru/vgtrksmotrim/smotrim-live-04-srt.smil/playlist.m3u8",
-        "type": "hls",
         "available": true,
         "id": "360-podmoskovie"
       }
@@ -179,7 +163,6 @@
     "streams": [
       {
         "link": "http://rusbrics.mediacdn.ru/cdn/brics/russian/playlist_hdhigh.m3u8",
-        "type": "hls",
         "available": true,
         "id": "tv-brics"
       }
@@ -192,7 +175,6 @@
     "streams": [
       {
         "link": "http://serv25.vintera.tv:8081/kaleidoscop/kaleidoscop_sd/playlist.m3u8",
-        "type": "hls",
         "available": true,
         "id": "domashny"
       }

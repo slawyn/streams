@@ -12,7 +12,7 @@ if "%CMD%"=="web" (
 )
 
 if "%CMD%"=="upload" (
-    adb connect 192.168.0.102:5555
+    adb connect 192.168.0.103:5555
     adb install -r %APK%
     exit /b
 )

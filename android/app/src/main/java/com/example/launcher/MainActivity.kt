@@ -5,9 +5,7 @@ import LanguageLoader
 import StreamLoader
 import android.os.Bundle
 import android.util.Log
-import android.view.Menu
 import android.widget.Button
-import android.view.MenuItem
 import android.widget.GridLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -16,8 +14,7 @@ import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 
-
-val BASE_URL = "192.168.0.108:80"
+private const val BASE_URL = "http://192.168.0.108:80/"
 class MainActivity : AppCompatActivity() {
     private lateinit var language: Language
     private lateinit var grid: GridLayout
@@ -31,10 +28,10 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
         language = LanguageLoader.load(this)
-
         grid = findViewById<GridLayout>(R.id.grid)
         val address = findViewById<TextView>(R.id.address)
-        val button = findViewById<Button>(R.id.button)
+        address.text = BASE_URL
+
 
 
         // show build number in player dialog if available
@@ -45,27 +42,23 @@ class MainActivity : AppCompatActivity() {
             append(getString(R.string.build))
         }
 
-
-        address.text = BASE_URL
+        val button = findViewById<Button>(R.id.button)
         button.text = language.loadStreamsBuffer
+        button.setOnClickListener {
+            Toast.makeText(this, language.statusLoadingStreams, Toast.LENGTH_SHORT).show()
+            lifecycleScope.launch {
+                try {
+                    val remoteStreams = StreamLoader.loadRemote(BASE_URL)
+                    GridPopulator.populate(this@MainActivity, grid, remoteStreams)
+                } catch (e: Exception) {
+                    Log.e("API_ERROR", e.message ?: language.statusUnknownError)
+                    }
+                }
+        }
 
         val localStreams = StreamLoader.loadLocal(this)
-
         lifecycleScope.launch {
             GridPopulator.populate(this@MainActivity, grid, localStreams)
-        }
-    
-        button.setOnClickListener {
-        Toast.makeText(this, language.statusLoadingStreams, Toast.LENGTH_SHORT).show()
-
-        lifecycleScope.launch {
-            try {
-                val remoteStreams = StreamLoader.loadRemote(BASE_URL)
-                GridPopulator.populate(this@MainActivity, grid, remoteStreams)
-            } catch (e: Exception) {
-                Log.e("API_ERROR", e.message ?: language.statusUnknownError)
-                }
-            }
         }
     }
 }

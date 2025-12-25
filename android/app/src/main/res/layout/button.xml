@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.button.MaterialButton xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="wrap_content"
+    android:layout_width="300dp"
     android:layout_height="wrap_content"
-    app:backgroundTint="@color/bg_color"
-    app:strokeColor="@color/bg_border_color"
-    app:strokeWidth="2dp"
+    android:gravity="center"
     android:textColor="@color/white"
     android:focusable="true"
     android:focusableInTouchMode="false"
-    android:gravity="center"
+    app:backgroundTint="@color/bg_color"
+    app:strokeColor="@color/bg_border_color"
+    app:strokeWidth="2dp"
     />
