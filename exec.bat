@@ -2,6 +2,8 @@
 
 set CMD=%1
 set APK=%CD%\android\app\build\outputs\apk\debug\app-debug.apk
+set WEB_CONFIG_JSON=%CD%\web\json\config.json
+set APP_CONFIG_JSON=%CD%\android\app\src\main\assets\
 
 if "%CMD%"=="web" (
     cd web
@@ -14,6 +16,12 @@ if "%CMD%"=="upload" (
     adb install -r %APK%
     exit /b
 )
+
+if "%CMD%"=="copy" (
+    copy %WEB_CONFIG_JSON% %APP_CONFIG_JSON%
+    exit /b
+)
+
 
 @REM @echo off
 @REM set SOURCE_VIDEO=
