@@ -17,6 +17,19 @@ h1 {
     height: 100vh;
 }
 
+.video-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-bottom: 0.5em;
+}
+
+#streamSelect {
+    padding: 0.3em;
+    font-size: 1em;
+}
+
+
 #tileContainer {
     width: 300px;
     min-width: 180px;

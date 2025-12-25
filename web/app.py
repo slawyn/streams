@@ -11,6 +11,8 @@ import shutil
 import mimetypes
 import re
 import json
+import threading
+import queue
 from io import BytesIO
 from urllib.parse import urlparse
 import http.client
@@ -60,37 +62,45 @@ def load_file(path):
     else:
         return ""
 
-import threading
-import queue
-
 def validate_confg(data):
-    validated = []
+    """Validate streams in the given config data.
+
+    Accepts either:
+    - a list of groups where each group has a 'streams' list, or
+    - a flat list of stream entries (old format)
+
+    Updates each stream's 'available' boolean in-place and returns the updated data.
+    """
     q = queue.Queue()
-    lock = threading.Lock()
 
     def worker():
         while True:
-            entry = q.get()
-            if entry is None:
+            item = q.get()
+            if item is None:
                 break
-            url = entry.get("link", "")
-            entry["available"] = is_downloadable(url)
-            with lock:
-                validated.append(entry)
+            parent, stream = item
+            url = stream.get("link", "")
+            stream["available"] = is_downloadable(url)
             q.task_done()
 
-    # Start 10 threads
+    # Start worker threads
     threads = []
     for _ in range(10):
         t = threading.Thread(target=worker)
+        t.daemon = True
         t.start()
         threads.append(t)
 
-    # Fill the queue
+    # Enqueue streams
     for entry in data:
-        q.put(entry)
+        if isinstance(entry, dict) and isinstance(entry.get('streams'), list):
+            for stream in entry['streams']:
+                q.put((entry, stream))
+        else:
+            # old format: entry itself is a stream-like dict
+            q.put((None, entry))
 
-    # Block until all tasks are done
+    # Wait for completion
     q.join()
 
     # Stop workers
@@ -99,10 +109,27 @@ def validate_confg(data):
     for t in threads:
         t.join()
 
-    return validated
+    return data
 
 def create_config(path):
-    entries = []
+    """Scan .m3u/.m3u8 files and produce grouped config entries.
+
+    Grouping key: (name.trim(), logo, group). Each group contains:
+    - logo, group, name
+    - streams: list of {link, type, available, id}
+    """
+    groups = {}
+
+    def detect_type(link):
+        l = link.lower()
+        if '.m3u8' in l or '.m3u' in l:
+            return 'hls'
+        if '.mpd' in l:
+            return 'dash'
+        if '.mp3' in l:
+            return 'audio'
+        return 'unknown'
+
     for root, _, files in os.walk(path):
         for file in files:
             if file.endswith('.m3u') or file.endswith('.m3u8'):
@@ -116,7 +143,6 @@ def create_config(path):
                         tvg_id = re.search(r'tvg-id="([^"]+)"', line)
                         tvg_logo = re.search(r'tvg-logo="([^"]+)"', line)
                         group = re.search(r'group-title="([^"]+)"', line)
-                        # Name is after the last comma
                         name_match = re.split(r',', line, maxsplit=1)
                         name = name_match[1].strip() if len(name_match) > 1 else ""
                         # Find the next non-empty line that is a link
@@ -131,18 +157,39 @@ def create_config(path):
                                 link = link_candidate
                                 break
                             j += 1
-                        entry = {
-                            "id": tvg_id.group(1) if tvg_id else "",
-                            "logo": tvg_logo.group(1) if tvg_logo else "",
-                            "group": group.group(1) if group else "",
-                            "name": name,
-                            "link": link
-                        }
-                        # Only add if all required fields are not empty
-                        if all(entry[k] for k in ("id", "logo", "group", "name", "link")):
-                            entries.append(entry)
+                        if link:
+                            logo_val = tvg_logo.group(1) if tvg_logo else ""
+                            group_val = group.group(1) if group else ""
+                            id_val = tvg_id.group(1) if tvg_id else ""
+                            key = (name, logo_val, group_val)
+                            if key not in groups:
+                                groups[key] = {
+                                    "logo": logo_val,
+                                    "group": group_val,
+                                    "name": name,
+                                    "streams": []
+                                }
+                            stream = {
+                                "link": link,
+                                "type": detect_type(link),
+                                "available": False,
+                                "id": id_val
+                            }
+                            groups[key]["streams"].append(stream)
                     i += 1
-    return entries
+
+    # Deduplicate streams by link within each group
+    for k, v in groups.items():
+        seen = set()
+        unique_streams = []
+        for s in v["streams"]:
+            if s["link"] in seen:
+                continue
+            seen.add(s["link"])
+            unique_streams.append(s)
+        v["streams"] = unique_streams
+
+    return list(groups.values())
 
 class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     server_version = "SimpleHTTPWithUpload/" + __version__

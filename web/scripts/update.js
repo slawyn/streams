@@ -1,25 +1,31 @@
-export async function fetchSources(apiPath) {
+async function fetchJson(apiPath) {
     const response = await fetch(apiPath);
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status} from ${apiPath}`);
     }
-    const streamList = await response.json();
-    if (!Array.isArray(streamList)) {
+    const data = await response.json();
+    if (!Array.isArray(data)) {
         throw new Error('API response is not an array.');
     }
-    // Add "type" key based on link extension
-    return streamList.map(entry => {
-        let type = 'unknown';
-        if (entry.link && entry.link.endsWith('.m3u8')) {
-            type = 'hls';
-        } else if (entry.link && entry.link.endsWith('.mpd')) {
-            type = 'dash';
-        } else if (entry.link && entry.link.endsWith('.mp3')) {
-            type = 'radio';
-        }
-        return { ...entry, type };
-    }).filter(source => source.type !== 'unknown');
+    return data;
 }
+
+function normalizeStream(s) {
+    return {
+        link: s.link,
+        available: !!s.available,
+        id: s.id || ''
+    };
+}
+
+function normalizeEntry(entry) {
+    if (Array.isArray(entry.streams)) {
+        const streams = entry.streams.map(normalizeStream).filter(s => s.link);
+        return { name: entry.name || '', group: entry.group || '', logo: entry.logo || '', streams };
+    }
+    return null;
+}
+
 
 function _fetchSilent(url) {
     return new Promise((resolve) => {
@@ -38,12 +44,14 @@ export async function isStreamAvailable(url, available) {
     }
 
     try {
-        // const response = await fetch(url, { method: 'HEAD' });
         const response = await _fetchSilent(url);
         return response.ok;
-        // return true;
     } catch {
-        // Error silently ignored
         return false;
     }
+}
+
+export async function fetchSources(apiPath) {
+    const data = await fetchJson(apiPath);
+    return data.map(normalizeEntry).filter(Boolean);
 }
