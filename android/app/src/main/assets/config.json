@@ -7,17 +7,22 @@
        {
         "link": "https://streaming.thestream.cyou/live/210-req_offset_28000000-req_window_0-3k_v5.m3u8",
         "available": true,
-        "id": "Первый канал"
+        "id": "Первый канал 3k"
       },
       {
         "link": "https://streaming.thestream.cyou/live/210-req_offset_28000000-req_window_0-2k_v5.m3u8",
         "available": true,
-        "id": "Первый канал"
+        "id": "Первый канал 2k"
       },
       {
         "link": "https://streaming.goodstream.icu/live/210-req_offset_28000000-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "Первый канал"
+        "id": "Первый канал 1k"
+      },
+      {
+        "link": "https://streaming.goodstream.icu/live/210.m3u8",
+        "available": true,
+        "id": "Первый канал 210"
       }
     ]
   },
@@ -29,22 +34,22 @@
       {
         "link": "https://streaming.thestream.cyou/live/213-req_offset_28000000-req_window_0-3k_v5.m3u8",
         "available": true,
-        "id": "НТВ"
+        "id": "НТВ 3k"
       },
       {
         "link": "https://streaming.thestream.cyou/live/213-req_offset_28000000-req_window_0-2k_v5.m3u8",
         "available": true,
-        "id": "НТВ"
+        "id": "НТВ 2k"
       },
       {
         "link": "https://streaming.thestream.cyou/live/213-req_offset_28000000-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "НТВ"
+        "id": "НТВ 1k"
       },
       {
-        "link": "https://tv.tvcdnpotok.com/GTAC4OGuPxmGAq0n0cU_zw/537/1766712426/index.m3u8",
+        "link": "https://streaming.thestream.cyou/live/213.m3u8",
         "available": true,
-        "id": "НТВ"
+        "id": "НТВ 213"
       }
     ]
   },
@@ -56,17 +61,22 @@
       {
         "link": "https://streaming.thestream.cyou/live/44-req_offset_28000000-req_window_0-3k_v5.m3u8",
         "available": true,
-        "id": "Дом Кино"
+        "id": "Дом Кино 3k"
       },
       {
         "link": "https://streaming.thestream.cyou/live/44-req_offset_28000000-req_window_0-2k_v5.m3u8",
         "available": true,
-        "id": "Дом Кино"
+        "id": "Дом Кино 2k"
       },
       {
         "link": "https://streaming.thestream.cyou/live/44-req_offset_28000000-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "Дом Кино"
+        "id": "Дом Кино 1k"
+      },
+      {
+        "link": "https://streaming.thestream.cyou/live/44.m3u8",
+        "available": true,
+        "id": "Дом Кино 44"
       }
     ]
   },
@@ -85,12 +95,17 @@
    {
     "logo": "https://televizor24tochka.ru/logo/100/tnt.png",
     "group": "Информационные",
-    "name": "ТНТ",
+    "name": "ТНТ 1k",
     "streams": [
       {
         "link": "https://streaming.goodstream.icu/live/38-req_offset_28000000-req_window_0-1k_v5.m3u8",
         "available": true,
         "id": "tnt"
+      },
+      {
+        "link": "https://streaming.goodstream.icu/live/38.m3u8",
+        "available": true,
+        "id": "tnt 38"
       }
     ]
   },
@@ -102,17 +117,22 @@
       {
         "link": "https://streaming.goodstream.icu/live/748-req_offset_28000000-req_window_0-3k_v5.m3u8",
         "available": true,
-        "id": "zvezda"
+        "id": "zvezda 3k"
       },
       {
         "link": "https://streaming.goodstream.icu/live/748-req_offset_28000000-req_window_0-2k_v5.m3u8",
         "available": true,
-        "id": "zvezda"
+        "id": "zvezda 2k"
       },
       {
         "link": "https://streaming.goodstream.icu/live/748-req_offset_28000000-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "zvezda"
+        "id": "zvezda 1k"
+      },
+      {
+        "link": "https://streaming.goodstream.icu/live/748.m3u8",
+        "available": true,
+        "id": "zvezda 748"
       }
     ]
   },
@@ -124,22 +144,27 @@
       {
         "link": "https://streaming.thestream.cyou/live/211-req_offset_28000000-req_window_0-4k_v5.m3u8",
         "available": true,
-        "id": "Россия РТР"
+        "id": "Россия РТР 4k"
       },
       {
         "link": "https://streaming.thestream.cyou/live/211-req_offset_28000000-req_window_0-3k_v5.m3u8",
         "available": true,
-        "id": "Россия РТР"
+        "id": "Россия РТР 3k"
       },
       {
         "link": "https://streaming.thestream.cyou/live/211-req_offset_28000000-req_window_0-2k_v5.m3u8",
         "available": true,
-        "id": "Россия РТР"
+        "id": "Россия РТР 2k"
       },
       {
         "link": "https://streaming.thestream.cyou/live/211-req_offset_28000000-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "Россия РТР"
+        "id": "Россия РТР 1k"
+      },
+      {
+        "link": "https://streaming.thestream.cyou/live/211.m3u8",
+        "available": true,
+        "id": "Россия РТР 211"
       }
     ]
   },
@@ -151,12 +176,12 @@
       {
         "link": "https://streaming.thestream.cyou/live/211-req_offset_28000000-req_window_0-2k_v5.m3u8",
         "available": true,
-        "id": "Россия 1"
+        "id": "Россия 1 2k"
       },
       {
-        "link": "https://vgtrkregion-reg.cdnvideo.ru/vgtrk/0/russia1-hd/1080p.m3u8",
+        "link": "https://streaming.thestream.cyou/live/211.m3u8",
         "available": true,
-        "id": "Россия 1"
+        "id": "Россия 1 211"
       }
     ]
   },
@@ -168,7 +193,12 @@
       {
         "link": "https://streaming.televizor-24-tochka.ru/live/9-req_offset_28000000-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "Россия K"
+        "id": "Россия K 1k"
+      },
+      {
+        "link": "https://streaming.televizor-24-tochka.ru/live/9.m3u8",
+        "available": true,
+        "id": "Россия K 9"
       }
     ]
   },
@@ -180,7 +210,12 @@
       {
         "link": "https://streaming.thestream.cyou/live/30-req_offset_28000000-req_window_0-3k_v5.m3u8",
         "available": true,
-        "id": "Россия 24"
+        "id": "Россия 24 3k"
+      },
+      {
+        "link": "https://streaming.thestream.cyou/live/30.m3u8",
+        "available": true,
+        "id": "Россия 24 30"
       }
     ]
   },
@@ -209,17 +244,22 @@
       {
         "link": "https://streaming.thestream.cyou/live/232-req_offset_28000000-req_window_0-3k_v5.m3u8",
         "available": true,
-        "id": "Карусель"
+        "id": "Карусель 3k"
       },
       {
         "link": "https://streaming.thestream.cyou/live/232-req_offset_28000000-req_window_0-2k_v5.m3u8",
         "available": true,
-        "id": "Карусель"
+        "id": "Карусель 2k"
       },
       {
         "link": "https://streaming.thestream.cyou/live/232-req_offset_28000000-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "Карусель"
+        "id": "Карусель 1k"
+      },
+      {
+        "link": "https://streaming.thestream.cyou/live/232.m3u8",
+        "available": true,
+        "id": "Карусель 232"
       }
     ]
   },

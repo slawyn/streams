@@ -56,7 +56,7 @@ object StreamButtonFactory {
 
             val items = streams.mapIndexed { index, s ->
                 val avail = if (s.available) "" else " (unavailable)"
-                "${s.id} $index $avail "
+                "${s.id} $avail "
             }.toTypedArray()
 
 

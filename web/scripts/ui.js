@@ -24,15 +24,13 @@ export function setupUI(elements, deps) {
 
     async function loadSource(source) {
         select.innerHTML = '<option value="">Select stream…</option>';
-        let index = 0;
         for (const stream of source.streams) {
             if (stream.available) {
                 const opt = document.createElement('option');
                 opt.value = stream.link;
-                opt.textContent = `${stream.id} ${index + 1}`;
+                opt.textContent = `${stream.id}`;
                 select.appendChild(opt);
             }
-            index++;
         }
 
         statusDiv.textContent = `Preparing to load ${source.name} stream...`;
