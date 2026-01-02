@@ -3,7 +3,9 @@
 set CMD=%1
 set APK=%CD%\android\app\build\outputs\apk\debug\app-debug.apk
 set WEB_CONFIG_JSON=%CD%\web\json\config.json
-set APP_CONFIG_JSON=%CD%\android\app\src\main\assets\
+set ANDROID=%CD%\android
+set APP_CONFIG_JSON=%ANDROID%\app\src\main\assets\
+set GRADLEW=%ANDROID%\gradlew.bat
 set DEVICE=192.168.0.101:5555
 if "%CMD%"=="web" (
     cd web
@@ -13,12 +15,15 @@ if "%CMD%"=="web" (
 
 if "%CMD%"=="upload" (
     adb connect %DEVICE%
-    adb install -r %APK%
+    adb -s %DEVICE% install -r %APK%
     exit /b
 )
 
-if "%CMD%"=="copy" (
+if "%CMD%"=="build" (
     copy %WEB_CONFIG_JSON% %APP_CONFIG_JSON%
+    pushd %ANDROID%
+    %GRADLEW% assembleDebug
+    popd
     exit /b
 )
 
