@@ -5,5 +5,8 @@ data class Language(
     val statusLoadingStreams: String = "Loading streams...",
     val statusUnknownError: String = "Unknown error occurred",
     val selectStream: String = "Select stream",
-    val statusNoStreams: String = "No streams available"
-)
+    val statusNoStreams: String = "No streams available",
+    val title: String = "Streams",
+    val loadRemote: String = "Load Remote",
+    val remoteLoadNotAvailable: String = "Remote load not available"
+) 

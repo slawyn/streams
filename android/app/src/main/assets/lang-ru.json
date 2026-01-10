@@ -3,5 +3,8 @@
   "statusLoadingStreams": "Загрузка потоков...",
   "statusUnknownError": "Неизвестная ошибка",
   "selectStream": "Выберите поток",
-  "statusNoStreams": "Потоки отсутствуют"
-}
+  "statusNoStreams": "Потоки отсутствуют",
+  "title": "Потоки",
+  "loadRemote": "Загрузить с сервера",
+  "remoteLoadNotAvailable": "Удалённая загрузка недоступна"
+} 

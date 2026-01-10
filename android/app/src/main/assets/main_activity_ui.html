@@ -1,0 +1,99 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Streams</title>
+  <style>
+    :root{--bg:#121212;--card:#1e1e1e;--accent:#2196f3;--text:#fff}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+    .toolbar{display:flex;align-items:center;gap:12px;padding:12px;background:transparent}
+    .address{flex:1;color:var(--text);font-weight:600}
+    .btn{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:4px}
+
+    .grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(160px,1fr));gap:12px;padding:12px}
+    .card{background:var(--card);border-radius:8px;padding:8px;display:flex;flex-direction:column;align-items:center;text-align:center;cursor:pointer}
+    .card img{width:100%;height:120px;object-fit:cover;border-radius:6px}
+    .name{margin-top:8px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}
+
+    .footer{position:fixed;bottom:8px;left:8px;padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:6px;font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div class="address" id="address">...</div>
+    <button class="btn" id="loadRemote">Load Remote</button>
+  </div>
+
+  <div id="grid" class="grid"></div>
+
+  <div class="footer" id="version">v</div>
+
+  <script>
+    let streams = [];
+
+    function updateStreams(json) {
+      try {
+        streams = json;
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+        streams.forEach((s, idx) => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.onclick = () => { if(window.Android && window.Android.onItemClicked) window.Android.onItemClicked(idx); };
+
+          const img = document.createElement('img');
+          img.src = s.logo;
+          img.alt = s.name;
+          img.onerror = () => img.style.visibility = 'hidden';
+
+          const name = document.createElement('div');
+          name.className = 'name';
+          name.textContent = s.name;
+
+          card.appendChild(img);
+          card.appendChild(name);
+          grid.appendChild(card);
+        });
+      } catch (e) {
+        console.error('render error', e);
+      }
+    }
+
+    document.getElementById('loadRemote').addEventListener('click', () => {
+      if (window.Android && window.Android.loadRemoteStreams) {
+        window.Android.loadRemoteStreams();
+      } else {
+        alert(window.remoteLoadNotAvailableMessage || 'Remote load not available');
+      }
+    });
+
+    function requestLocalStreams(){
+      if (window.Android && window.Android.requestLocalStreams) {
+        window.Android.requestLocalStreams();
+      }
+    }
+
+    // Apply translations provided by Android
+    function applyTranslations(){
+      try {
+        const t = window.translations || {};
+        if (t.title) document.title = t.title;
+        const btn = document.getElementById('loadRemote');
+        if (btn && t.loadRemote) btn.textContent = t.loadRemote;
+        window.remoteLoadNotAvailableMessage = t.remoteLoadNotAvailable || 'Remote load not available';
+      } catch(e){}
+    }
+
+    // Try to set base URL and version
+    function initMeta(){
+      if (window.Android && window.Android.getBaseUrl) {
+        try { document.getElementById('address').textContent = window.Android.getBaseUrl(); } catch(e){}
+      }
+      try { document.getElementById('version').textContent = 'v' + (/* fallback if web can't access */ ''); } catch(e){}
+    }
+
+    document.addEventListener('DOMContentLoaded', () => { initMeta(); applyTranslations(); requestLocalStreams(); });
+  </script>
+</body>
+</html>
