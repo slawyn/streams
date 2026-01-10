@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="playback_speed_modes">
+        <item>Auto</item>
+        <item>Disabled</item>
+    </string-array>
+</resources>

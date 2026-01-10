@@ -7,13 +7,17 @@ import androidx.media3.ui.PlayerView
 import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
 import androidx.media3.exoplayer.upstream.BandwidthMeter
 import androidx.media3.common.PlaybackException
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 
 import android.app.Dialog
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.View
+import android.widget.Spinner
 import android.widget.TextView
+import android.widget.ArrayAdapter
 import com.example.launcher.R
 import java.util.Locale
 
@@ -24,6 +28,8 @@ class PlayerFragment : DialogFragment() {
     private lateinit var handler: Handler
     private lateinit var updateRunnable: Runnable
     private lateinit var bitrateTextView: TextView
+    private lateinit var playbackModeSpinner: Spinner
+    private var autoSpeedEnabled: Boolean = true
     private lateinit var bandwidthMeter: BandwidthMeter
 
     // Current media and managers
@@ -33,7 +39,6 @@ class PlayerFragment : DialogFragment() {
     private val TAG = "PlayerFragment"
     private val RETRY_DELAY_MS = 3000L
     private val retryManager = RetryManager()
-    private val responseTracker = ResponseTimeTracker()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,6 +80,30 @@ class PlayerFragment : DialogFragment() {
 
     private fun initViews(root: android.view.View): PlayerView {
         bitrateTextView = root.findViewById(R.id.bitrateTextView)
+        playbackModeSpinner = root.findViewById(R.id.playbackModeSpinner)
+
+        // Populate spinner and default to "Auto"
+        val adapter = ArrayAdapter.createFromResource(root.context, R.array.playback_speed_modes, android.R.layout.simple_spinner_item)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        playbackModeSpinner.adapter = adapter
+        playbackModeSpinner.setSelection(0) // Auto selected by default
+        playbackModeSpinner.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>, view: android.view.View?, position: Int, id: Long) {
+                autoSpeedEnabled = (position == 0) // Auto = position 0
+                // Update status shown in the bitrate TextView
+                updateBitrateUi()
+            }
+
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>) {
+                // keep default
+            }
+        })
+
+        // Make the spinner invisible (it already is) but openable by tapping the bitrateTextView
+        bitrateTextView.setOnClickListener {
+            playbackModeSpinner.performClick()
+        }
+
         return root.findViewById(R.id.playerView)
     }
 
@@ -87,7 +116,6 @@ class PlayerFragment : DialogFragment() {
         val url = videoUrl ?: return
         val mediaItem = MediaItem.fromUri(url)
         currentMediaItem = mediaItem
-        responseTracker.startRequest()
         exo.setMediaItem(mediaItem)
         exo.prepare()
         exo.play()
@@ -106,7 +134,6 @@ class PlayerFragment : DialogFragment() {
 
             override fun onPlaybackStateChanged(playbackState: Int) {
                 if (playbackState == Player.STATE_READY || playbackState == Player.STATE_BUFFERING) {
-                    responseTracker.recordResponse()
                     updateBitrateUi()
                     retryManager.cancel()
                 }
@@ -114,7 +141,6 @@ class PlayerFragment : DialogFragment() {
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 if (isPlaying) {
-                    responseTracker.recordResponse()
                     updateBitrateUi()
                     retryManager.cancel()
                 }
@@ -125,9 +151,25 @@ class PlayerFragment : DialogFragment() {
     private fun updateBitrateUi() {
         val bitrate = bandwidthMeter.bitrateEstimate
         val mbps = bitrate / 1_000_000.0
-        val resp = responseTracker.getResponseLabel()
+        val bufferedMs = player?.let { kotlin.math.max(0L, it.bufferedPosition - it.currentPosition) } ?: 0L
+        val bufferedSec = bufferedMs / 1000.0
+
+        // If auto mode is enabled and buffered time drops below threshold, reduce playback speed slightly to 0.9x to help buffer
+        if (autoSpeedEnabled) {
+            player?.let {
+                val targetSpeed = if (bufferedSec < 5.0) 0.8f else 1.0f
+                val currentSpeed = it.playbackParameters.speed
+                if (kotlin.math.abs(currentSpeed - targetSpeed) > 0.01f) {
+                    it.setPlaybackParameters(PlaybackParameters(targetSpeed))
+                }
+            }
+        }
+
+        // Use fixed-width fields so the label width doesn't change when digit counts vary
+        val statusChar = if (autoSpeedEnabled) "A" else "D"
         handler.post {
-            bitrateTextView.text = String.format("Bitrate: %.2f Mbps%s", mbps, resp)
+            // Reserve space for values (width 6 with 2 decimals) and append status char
+            bitrateTextView.text = String.format(Locale.US, "%6.2f Mbps | %6.2f s | %s", mbps, bufferedSec, statusChar)
         }
     }
 
@@ -147,7 +189,13 @@ class PlayerFragment : DialogFragment() {
                     val url = videoUrl ?: return
                     val media = currentMediaItem ?: MediaItem.fromUri(url).also { currentMediaItem = it }
                     player?.let {
-                        responseTracker.startRequest()
+                        // If already playing, cancel further retries and exit
+                        if (it.isPlaying) {
+                            runnable?.let { handler.removeCallbacks(it) }
+                            runnable = null
+                            retrying = false
+                            return
+                        }
                         it.setMediaItem(media)
                         it.prepare()
                         it.play()
@@ -165,23 +213,7 @@ class PlayerFragment : DialogFragment() {
         }
     }
 
-    private inner class ResponseTimeTracker {
-        private var startMs: Long = 0L
-        private var lastMs: Long? = null
 
-        fun startRequest() {
-            startMs = System.currentTimeMillis()
-        }
-
-        fun recordResponse() {
-            if (startMs > 0L) {
-                lastMs = System.currentTimeMillis() - startMs
-                startMs = 0L
-            }
-        }
-
-        fun getResponseLabel(): String = lastMs?.let { String.format(Locale.US, " | Response: %.2f s", it / 1000.0) } ?: ""
-    }
 
     override fun onStop() {
         super.onStop()
