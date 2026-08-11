@@ -32,34 +32,86 @@
   <script>
     let streams = [];
 
-    function updateStreams(json) {
-      try {
-        streams = json;
-        const grid = document.getElementById('grid');
-        grid.innerHTML = '';
-        streams.forEach((s, idx) => {
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.onclick = () => { if(window.Android && window.Android.onItemClicked) window.Android.onItemClicked(idx); };
+  function updateStreams(json) {
+    try {
+      streams = json;
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+      
+      streams.forEach((s, idx) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.tabIndex = 0;
 
-          const img = document.createElement('img');
-          img.src = s.logo;
-          img.alt = s.name;
-          img.onerror = () => img.style.visibility = 'hidden';
+        let clickTimer = null;
+        let isLongClick = false;
+        const holdTime = 500;
 
-          const name = document.createElement('div');
-          name.className = 'name';
-          name.textContent = s.name;
+        const handleStart = (e) => {
+          if (e.pointerType === 'mouse' && e.button !== 0) return;
+          if (e.type === 'keydown' && e.key !== 'Enter' && e.keyCode !== 23) return;
+          if (clickTimer) return;
 
-          card.appendChild(img);
-          card.appendChild(name);
-          grid.appendChild(card);
-        });
-      } catch (e) {
-        console.error('render error', e);
-      }
+          isLongClick = false;
+          clickTimer = setTimeout(() => {
+            isLongClick = true;
+            if (window.Android && window.Android.onItemLongClicked) {
+              window.Android.onItemLongClicked(idx);
+            } else {
+              console.log('Long click auf Index:', idx);
+            }
+          }, holdTime);
+        };
+
+        const handleEnd = (e) => {
+          if (e.pointerType === 'mouse' && e.button !== 0) return;
+          if (e.type === 'keyup' && e.key !== 'Enter' && e.keyCode !== 23) return;
+
+          if (clickTimer) {
+            clearTimeout(clickTimer);
+            clickTimer = null;
+          }
+          if (!isLongClick) {
+            if (window.Android && window.Android.onItemClicked) {
+              window.Android.onItemClicked(idx);
+            } else {
+              console.log('Normaler Klick auf Index:', idx);
+            }
+          }
+        };
+
+        const handleCancel = () => {
+          if (clickTimer) {
+            clearTimeout(clickTimer);
+            clickTimer = null;
+          }
+        };
+
+        card.onpointerdown = handleStart;
+        card.onpointerup = handleEnd;
+        card.onpointerleave = handleCancel;
+
+        card.onkeydown = handleStart;
+        card.onkeyup = handleEnd;
+        card.onblur = handleCancel;
+
+        const img = document.createElement('img');
+        img.src = s.logo;
+        img.alt = s.name;
+        img.onerror = () => img.style.visibility = 'hidden';
+
+        const name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = s.name;
+
+        card.appendChild(img);
+        card.appendChild(name);
+        grid.appendChild(card);
+      });
+    } catch (e) {
+      console.error('render error', e);
     }
-
+  }
     document.getElementById('loadRemote').addEventListener('click', () => {
       if (window.Android && window.Android.loadRemoteStreams) {
         window.Android.loadRemoteStreams();
@@ -90,7 +142,7 @@
       if (window.Android && window.Android.getBaseUrl) {
         try { document.getElementById('address').textContent = window.Android.getBaseUrl(); } catch(e){}
       }
-      try { document.getElementById('version').textContent = 'v' + (/* fallback if web can't access */ ''); } catch(e){}
+      try { document.getElementById('version').textContent = window.Android.getVersion(); } catch(e){}
     }
 
     document.addEventListener('DOMContentLoaded', () => { initMeta(); applyTranslations(); requestLocalStreams(); });

@@ -21,9 +21,20 @@ if "%CMD%"=="upload" (
     exit /b
 )
 
+if "%CMD%"=="test" (
+    copy %WEB_CONFIG_JSON% %APP_CONFIG_JSON%
+    pushd %ANDROID%
+    %GRADLEW% preBuild
+    %GRADLEW% assembleDebug
+    popd
+    adb -s emulator-5554 install -r %APK%
+    exit /b
+)
+
 if "%CMD%"=="build" (
     copy %WEB_CONFIG_JSON% %APP_CONFIG_JSON%
     pushd %ANDROID%
+    %GRADLEW% preBuild
     %GRADLEW% assembleDebug
     popd
     exit /b
@@ -31,7 +42,7 @@ if "%CMD%"=="build" (
 
 if "%CMD%"=="emulator" (
     pushd %AVD%
-    %EMULATOR%\emulator -avd Television_720p_API_36 -netdelay none -netspeed full
+    %EMULATOR%\emulator -avd Television_720p
     popd
 )
 

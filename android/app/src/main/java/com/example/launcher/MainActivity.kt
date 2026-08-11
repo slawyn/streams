@@ -47,12 +47,13 @@ class MainActivity : AppCompatActivity() {
                 webView.evaluateJavascript(js, null)
             }
         }
-
-        webView.addJavascriptInterface(AndroidBridge(), "Android")
-        webView.loadUrl("file:///android_asset/main_activity_ui.html")
+        val versionStr = getString(R.string.version)
+        val buildStr = getString(R.string.build)
+        webView.addJavascriptInterface(AndroidBridge(versionStr, buildStr), "Android")
+        webView.loadUrl("file:///android_asset/main-ui.html")
     }
 
-    private inner class AndroidBridge {
+    private inner class AndroidBridge (private val version: String, private val build: String) {
 
         @JavascriptInterface
         fun requestLocalStreams() {
@@ -84,24 +85,30 @@ class MainActivity : AppCompatActivity() {
         }
 
         @JavascriptInterface
-        fun onItemClicked(index: Int) {
-            runOnUiThread { handleItemClick(index) }
+        fun onItemLongClicked(index: Int) {
+            runOnUiThread { handleItemClick(index, true) }
         }
-
+        @JavascriptInterface
+        fun onItemClicked(index: Int) {
+            runOnUiThread { handleItemClick(index, false) }
+        }
         @JavascriptInterface
         fun getBaseUrl(): String {
             return BASE_URL
         }
+        @JavascriptInterface
+        fun getVersion(): String {
+           return "$version:$build"
+        }
     }
-
-    private fun handleItemClick(index: Int) {
+    private fun handleItemClick(index: Int, dialog: Boolean) {
         if (index < 0 || index >= currentStreams.size) return
         val stream = currentStreams[index]
         val streams = stream.streams
         if (streams.isEmpty()) {
             Toast.makeText(this, language.statusNoStreams, Toast.LENGTH_SHORT).show()
             return
-        } else if (streams.size == 1) {
+        } else if (streams.size == 1 || !dialog) {
             val playerFragment = PlayerFragment.newInstance(streams[0].link)
             playerFragment.show(supportFragmentManager, "PlayerFragment")
             return
@@ -112,14 +119,16 @@ class MainActivity : AppCompatActivity() {
             "${s.id}$avail"
         }.toTypedArray()
 
-        AlertDialog.Builder(this)
-            .setTitle(language.selectStream)
-            .setItems(items) { _, which ->
-                val selected = streams[which]
-                val playerFragment = PlayerFragment.newInstance(selected.link)
-                playerFragment.show(supportFragmentManager, "PlayerFragment")
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+    
+            AlertDialog.Builder(this)
+                .setTitle(language.selectStream)
+                .setItems(items) { _, which ->
+                    val selected = streams[which]
+                    val playerFragment = PlayerFragment.newInstance(selected.link)
+                    playerFragment.show(supportFragmentManager, "PlayerFragment")
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+       
     }
 }
