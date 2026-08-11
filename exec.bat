@@ -6,6 +6,8 @@ set WEB_CONFIG_JSON=%CD%\web\json\config.json
 set ANDROID=%CD%\android
 set APP_CONFIG_JSON=%ANDROID%\app\src\main\assets\
 set GRADLEW=%ANDROID%\gradlew.bat
+set EMULATOR=%USERPROFILE%\AppData\Local\Android\Sdk\emulator
+set AVD=%USERPROFILE%\.android\avd
 set DEVICE=192.168.0.101:5555
 if "%CMD%"=="web" (
     cd web
@@ -27,6 +29,11 @@ if "%CMD%"=="build" (
     exit /b
 )
 
+if "%CMD%"=="emulator" (
+    pushd %AVD%
+    %EMULATOR%\emulator -avd Television_720p_API_36 -netdelay none -netspeed full
+    popd
+)
 
 @REM @echo off
 @REM set SOURCE_VIDEO=
