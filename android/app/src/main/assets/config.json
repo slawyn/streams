@@ -3,8 +3,9 @@
     "logo": "https://televizor24tochka.ru/logo/100/pervyi-kanal.png",
     "group": "Общественные",
     "name": "Первый канал live",
+    "program": "https://teleprogramma.online/moskva/channel/pervyj/",
     "streams": [
-       {
+      {
         "link": "https://streaming.thestream.cyou/live/210-req_window_0-3k_v5.m3u8",
         "available": true,
         "id": "streaming [3k]"
@@ -24,6 +25,7 @@
   {
     "logo": "https://televizor24tochka.ru/logo/100/ntv.png",
     "group": "Общественные",
+    "program": "https://teleprogramma.online/moskva/channel/ntv/",
     "name": "НТВ",
     "streams": [
       {

@@ -29,6 +29,19 @@ h1 {
     font-size: 1em;
 }
 
+#program {
+    width: 300px;
+    min-width: 180px;
+    max-width: 400px;
+    background: #232323;
+    overflow-y: auto;
+    padding: 0.5em 0.5em 0.5em 0.5em;
+    border-right: 2px solid #333;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
 
 #tileContainer {
     width: 300px;
@@ -167,4 +180,25 @@ button:hover {
 
 #filterDropdown div:hover {
     background: #222;
+}
+
+.program-time {
+    font-size: 0.75em;
+    font-weight: bold;
+    color: #888;
+    background: rgba(128, 128, 128, 0.12);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    margin-right: 0.7em;
+}
+
+.program-item.program-active {
+    background: rgba(255, 193, 7, 0.15);
+    border-left: 3px solid #ffc107;
+    padding-left: 0.5em;
+}
+
+.program-item.program-active .program-time {
+    color: #ffc107;
+    background: rgba(255, 193, 7, 0.2);
 }

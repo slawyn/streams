@@ -28,6 +28,7 @@ if "%CMD%"=="test" (
     %GRADLEW% assembleDebug
     popd
     adb -s emulator-5554 install -r %APK%
+    adb -s emulator-5554 shell am start -n com.example.launcher/.MainActivity
     exit /b
 )
 
@@ -42,7 +43,7 @@ if "%CMD%"=="build" (
 
 if "%CMD%"=="emulator" (
     pushd %AVD%
-    %EMULATOR%\emulator -avd Television_720p
+    %EMULATOR%\emulator -avd Television_720p -wipe-data
     popd
 )
 

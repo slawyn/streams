@@ -10,11 +10,13 @@ import html
 import shutil
 import mimetypes
 import re
+import requests
+from bs4 import BeautifulSoup
 import json
 import threading
 import queue
 from io import BytesIO
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs, unquote    
 import http.client
 
 __version__ = "0.x"
@@ -22,6 +24,31 @@ __all__ = ["SimpleHTTPRequestHandler"]
 __author__ = ""
 __home_page__ = ""
 
+
+def parse_tv_schedule(html_content):
+    soup = BeautifulSoup(html_content, 'html.parser')
+    
+    square = soup.find('div', class_='square', id='progListSquare')
+    if not square:
+        return json.dumps([], ensure_ascii=False)
+        
+    channel_data = square.find(id='channel_data')
+    if not channel_data:
+        return json.dumps([], ensure_ascii=False)
+        
+    program_list = []
+    
+    for prog in channel_data.find_all('div', class_=lambda c: c and 'prog' in c.split()):
+        time_div = prog.find('div', class_='time')
+        title_div = prog.find('div', class_='title')
+        
+        program_list.append({
+            "time": time_div.get_text(strip=True) if time_div else "",
+            "title": title_div.get_text(strip=True) if title_div else "",
+            "attributes": [cls for cls in prog.get('class', []) if cls != 'prog']
+        })
+        
+    return json.dumps(program_list, ensure_ascii=False, indent=4)
 
 def is_downloadable(url):
     try:
@@ -119,17 +146,6 @@ def create_config(path):
     - streams: list of {link, available, id} (type is determined by client)
     """
     groups = {}
-
-    def detect_type(link):
-        l = link.lower()
-        if '.m3u8' in l or '.m3u' in l:
-            return 'hls'
-        if '.mpd' in l:
-            return 'dash'
-        if '.mp3' in l:
-            return 'audio'
-        return 'unknown'
-
     for root, _, files in os.walk(path):
         for file in files:
             if file.endswith('.m3u') or file.endswith('.m3u8'):
@@ -213,11 +229,49 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             f.close()
 
     def get_response_file(self):
-        if self.path == "/api/streams":
+        parsed_url = urlparse(self.path)
+        path_only = parsed_url.path
+
+        if path_only == "/api/streams":
             return self.api_streams_response()
-        elif self.path == "/api/resync":
+        elif path_only == "/api/resync":
             return self.api_resync_response()
+        elif path_only == "/api/program":
+            query_params = parse_qs(parsed_url.query)
+            target_url = query_params.get('url', [None])[0]
+            
+            if not target_url:
+                self.send_error(400, "Missing 'url' parameter")
+                return None
+
+            target_url = unquote(target_url)
+            return self.api_program_response(target_url)
+            
         return self.serve_static_or_directory()
+
+
+    def api_program_response(self, target_url):
+            try:
+                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+                response = requests.get(target_url, headers=headers, timeout=10)
+                response.raise_for_status()
+
+                _json = parse_tv_schedule(response.text)
+         
+                # 3. JSON-Antwort senden
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                
+                # Konvertiert die Liste in JSON und sendet sie
+                self.wfile.write(_json.encode('utf-8'))
+
+            except Exception as e:
+                self.send_response(500)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                error_json = json.dumps({"error": str(e)})
+                self.wfile.write(error_json.encode('utf-8'))
 
     def api_streams_response(self):
         config_path = os.path.join(os.getcwd(), "json", "config.json")

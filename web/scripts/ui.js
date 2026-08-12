@@ -1,186 +1,273 @@
 import { downloadJSON } from './utils.js';
+import { fetchIsStreamAvailable, fetchSources, fetchProgram } from './api.js';
 
-export function setupUI(elements, deps) {
-    const { video, select, playButton, pauseButton, muteButton, fullscreenButton, statusDiv, downloadButton, resyncButton, fetchButton, tileContainer, filterInput, filterDropdown } = elements;
-    const { playerManager, renderTiles, populateSources } = deps;
+const DEFAULT_GROUP = 'Other';
 
-    let sources = [];
+async function renderTiles(sources, tileContainer, statusDiv) {
+    if (!sources.length) {
+        statusDiv.textContent = 'No supported streams found from API.';
+        return [];
+    }
 
-    // Tile click handling
-    tileContainer.addEventListener('click', (event) => {
-        const clickedTile = event.target.closest('.tile');
-        if (clickedTile) {
-            document.querySelectorAll('.tile').forEach(t => t.classList.remove('active'));
-            clickedTile.classList.add('active');
-            const name = clickedTile.dataset.name;
-            for (const source of sources) {
-                if (source.name === name) {
-                    loadSource(source);
-                    break;
+    statusDiv.textContent = 'Loaded Streams';
+    tileContainer.innerHTML = '';
+
+    const groups = {};
+    const availableSources = [];
+
+    const getGroup = groupName => {
+        if (groups[groupName]) return groups[groupName];
+
+        const tile = document.createElement('div');
+        tile.className = 'group-tile';
+        tile.style.cssText = 'cursor:pointer;font-weight:bold;margin-top:.5em;margin-bottom:.2em';
+        tile.textContent = `${groupName} (0)`;
+
+        const content = document.createElement('div');
+        content.className = 'group-content';
+        content.style.cssText = 'display:none;margin-left:1em';
+
+        tile.onclick = () => {
+            const open = content.style.display === 'block';
+            content.style.display = open ? 'none' : 'block';
+            tile.classList.toggle('open', !open);
+        };
+
+        tileContainer.append(tile, content);
+        return (groups[groupName] = { tile, content });
+    };
+
+    for (const [index, source] of sources.entries()) {
+        const group = getGroup(source.group || DEFAULT_GROUP);
+        let available = false;
+
+        for (const stream of source.streams) {
+            stream.available = await fetchIsStreamAvailable(stream.link, stream.available);
+            available ||= stream.available;
+        }
+
+        if (!available) continue;
+
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        tile.dataset.index = index;
+        tile.dataset.name = source.name || '';
+
+        if (source.logo) {
+            const img = document.createElement('img');
+            img.src = source.logo;
+            img.alt = source.name || '';
+            img.style.cssText = 'max-width:48px;max-height:48px;display:block;margin:0 auto .2em';
+            tile.appendChild(img);
+        }
+
+        const name = document.createElement('span');
+        name.textContent = source.name || '';
+        name.style.cssText = 'font-size:.8em;display:block;text-align:center';
+        tile.appendChild(name);
+
+        group.content.appendChild(tile);
+        group.tile.textContent = `${source.group || DEFAULT_GROUP} (${group.content.children.length})`;
+        availableSources.push(source);
+    }
+
+    return availableSources;
+}
+
+async function loadProgram(source, container) {
+    if (!source.program) return;
+
+    try {
+        const data = await fetchProgram(source.program);
+        const list = typeof data === 'string' ? JSON.parse(data) : data;
+
+        if (!Array.isArray(list) || !list.length) {
+            container.innerHTML = '<div class="no-program">Keine Programmdaten verfügbar.</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+
+        for (const item of list) {
+            if (!item.time?.trim()) continue;
+
+            const row = document.createElement('div');
+            row.className = 'program-item';
+
+            if (Array.isArray(item.attributes)) {
+                row.classList.add(...item.attributes);
+
+                if (item.attributes.includes('active')) {
+                    row.classList.add('program-active');
                 }
             }
-        }
-    });
 
-    async function loadSource(source) {
-        select.innerHTML = '<option value="">Select stream…</option>';
-        for (const stream of source.streams) {
-            if (stream.available) {
-                const opt = document.createElement('option');
-                opt.value = stream.link;
-                opt.textContent = `${stream.id}`;
-                select.appendChild(opt);
-            }
-        }
+            const time = document.createElement('span');
+            time.className = 'program-time';
+            time.textContent = item.time;
 
-        statusDiv.textContent = `Preparing to load ${source.name} stream...`;
-        if (select.options.length > 1) {
-            select.selectedIndex = 1;
-            select.dispatchEvent(new Event("change"));
+            const title = document.createElement('span');
+            title.className = 'program-title';
+            title.textContent = item.title || '';
+
+            row.append(time, title);
+            container.appendChild(row);
         }
+    } catch (error) {
+        console.error('Fehler beim Verarbeiten der Programmdaten:', error);
+        container.innerHTML = '<div class="error">Fehler beim Laden des TV-Programms.</div>';
     }
+}
+function loadSource(source, select, statusDiv) {
+    select.innerHTML = '<option value="">Select stream…</option>';
+
+    for (const stream of source.streams) {
+        if (!stream.available) continue;
+
+        const option = document.createElement('option');
+        option.value = stream.link;
+        option.textContent = stream.id;
+        select.appendChild(option);
+    }
+
+    statusDiv.textContent = `Preparing to load ${source.name} stream...`;
+
+    if (select.options.length > 1) {
+        select.selectedIndex = 1;
+        select.dispatchEvent(new Event('change'));
+    }
+}
+
+function toggleFullscreen(video) {
+    if (document.fullscreenElement) return document.exitFullscreen();
+
+    if (video.requestFullscreen) video.requestFullscreen();
+    else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+    else if (video.mozRequestFullScreen) video.mozRequestFullScreen();
+    else if (video.msRequestFullscreen) video.msRequestFullscreen();
+}
+
+export function setupUI(elements, deps) {
+    const {
+        video, select, playButton, pauseButton, muteButton, fullscreenButton,
+        statusDiv, downloadButton, resyncButton, fetchButton,
+        tileContainer, filterInput, filterDropdown, program
+    } = elements;
+
+    const { playerManager } = deps;
+    let sources = [];
+
+    const selectSource = async source => {
+        loadSource(source, select, statusDiv);
+        await loadProgram(source, program);
+    };
+
+    tileContainer.addEventListener('click', async event => {
+        const tile = event.target.closest('.tile');
+        if (!tile) return;
+
+        document.querySelectorAll('.tile').forEach(el => el.classList.remove('active'));
+        tile.classList.add('active');
+
+        const source = sources.find(item => item.name === tile.dataset.name);
+        if (source) await selectSource(source);
+    });
 
     select.addEventListener('change', () => {
-        const selectedIndex = select.selectedIndex;
-        const selectedOption = select.options[selectedIndex];
-        const streamLink = selectedOption.value;
-        const streamId = selectedOption.textContent;
-
-        if (streamLink) {
-            playerManager.initForLink(video, streamLink, streamId, statusDiv);
+        const option = select.options[select.selectedIndex];
+        if (option?.value) {
+            playerManager.initForLink(video, option.value, option.textContent, statusDiv);
         }
     });
 
-    function fullscreenToggle() {
-        if (document.fullscreenElement) {
-            document.exitFullscreen(); // Exit fullscreen
-        } else {
-            if (video.requestFullscreen) {
-                video.requestFullscreen();
-            } else if (video.webkitRequestFullscreen) {
-                video.webkitRequestFullscreen(); // Safari
-            } else if (video.mozRequestFullScreen) {
-                video.mozRequestFullScreen(); // Firefox
-            } else if (video.msRequestFullscreen) {
-                video.msRequestFullscreen(); // IE/Edge
-            }
-        }
-    }
-
-    // Player controls
-    playButton.addEventListener('click', () => { video.play() });
-    pauseButton.addEventListener('click', () => { video.pause(); });
-    muteButton.addEventListener('click', () => {
+    playButton.onclick = () => video.play();
+    pauseButton.onclick = () => video.pause();
+    muteButton.onclick = () => {
         video.muted = !video.muted;
         muteButton.textContent = video.muted ? 'Unmute' : 'Mute';
-    });
+    };
 
-    fullscreenButton.addEventListener('click', () => { fullscreenToggle(); });
+    fullscreenButton.onclick = () => toggleFullscreen(video);
+    video.ondblclick = () => toggleFullscreen(video);
+    video.onplay = () => statusDiv.textContent = 'Playing...';
+    video.onpause = () => statusDiv.textContent = 'Paused.';
+    video.onended = () => statusDiv.textContent = 'Video ended.';
+    video.onvolumechange = () => {
+        muteButton.textContent = video.muted ? 'Unmute' : 'Mute';
+    };
 
-    video.addEventListener('play', () => {
-        const currentSource = 0
-        statusDiv.textContent = `Playing... ${currentSource}`;
-    });
-    video.addEventListener('pause', () => statusDiv.textContent = 'Paused.');
-    video.addEventListener('ended', () => statusDiv.textContent = 'Video ended.');
-    video.addEventListener('volumechange', () => { muteButton.textContent = video.muted ? 'Unmute' : 'Mute'; });
-    video.addEventListener('dblclick', () => { fullscreenToggle(); });
-
-    filterInput.addEventListener('input', async function () {
+    filterInput.addEventListener('input', () => {
         const query = filterInput.value.trim().toLowerCase();
+
         if (!query) {
             filterDropdown.style.display = 'none';
             filterDropdown.innerHTML = '';
             return;
         }
 
-        // Find all available sources that match the query in their name
-        const matches = [];
-        for (const source of sources) {
-            if (source.name && source.name.toLowerCase().includes(query)) {
-                matches.push(source);
-            }
-        }
+        const matches = sources.filter(source =>
+            source.name?.toLowerCase().includes(query)
+        );
 
-        if (matches.length === 0) {
+        if (!matches.length) {
             filterDropdown.style.display = 'none';
             filterDropdown.innerHTML = '';
             return;
         }
 
-        // Group matches by group name
-        const grouped = {};
-        matches.forEach(src => {
-            const group = src.group || 'Other';
-            if (!grouped[group]) grouped[group] = [];
-            grouped[group].push(src);
+        const groups = {};
+        matches.forEach(source => {
+            const group = source.group || DEFAULT_GROUP;
+            (groups[group] ||= []).push(source);
         });
 
-        // Build dropdown HTML
         filterDropdown.innerHTML = '';
-        Object.entries(grouped).forEach(([group, sources]) => {
-            const groupDiv = document.createElement('div');
-            groupDiv.style.fontWeight = 'bold';
-            groupDiv.style.padding = '0.3em 0.5em 0.1em 0.5em';
-            groupDiv.textContent = group;
-            filterDropdown.appendChild(groupDiv);
 
-            sources.forEach(source => {
+        for (const [group, items] of Object.entries(groups)) {
+            const heading = document.createElement('div');
+            heading.textContent = group;
+            heading.style.cssText = 'font-weight:bold;padding:.3em .5em .1em';
+            filterDropdown.appendChild(heading);
+
+            items.forEach(source => {
                 const item = document.createElement('div');
-                item.style.cursor = 'pointer';
-                item.style.padding = '0.2em 0.5em';
-                item.style.display = 'flex';
-                item.style.alignItems = 'center';
-                item.style.gap = '0.5em';
+                item.style.cssText = 'cursor:pointer;padding:.2em .5em;display:flex;align-items:center;gap:.5em';
 
-                // Add logo if available
                 if (source.logo) {
                     const img = document.createElement('img');
                     img.src = source.logo;
                     img.alt = source.name || '';
-                    img.style.width = '24px';
-                    img.style.height = '24px';
-                    img.style.objectFit = 'contain';
+                    img.style.cssText = 'width:24px;height:24px;object-fit:contain';
                     item.appendChild(img);
                 }
 
-                // Add name
-                const nameSpan = document.createElement('span');
-                nameSpan.textContent = source.name || '';
-                nameSpan.style.fontSize = '0.9em';
-                item.appendChild(nameSpan);
+                const name = document.createElement('span');
+                name.textContent = source.name || '';
+                name.style.fontSize = '.9em';
+                item.appendChild(name);
                 filterDropdown.appendChild(item);
             });
-        });
+        }
 
-        // Position and show dropdown
         const rect = filterInput.getBoundingClientRect();
-        filterDropdown.style.display = 'block';
-        filterDropdown.style.left = rect.left + window.scrollX + 'px';
-        filterDropdown.style.top = rect.bottom + window.scrollY + 'px';
-        filterDropdown.style.width = rect.width + 'px';
+        filterDropdown.style.cssText += `;display:block;left:${rect.left + scrollX}px;top:${rect.bottom + scrollY}px;width:${rect.width}px`;
     });
 
-    // Hide dropdown when input is cleared or loses focus
-    filterInput.addEventListener('blur', () => {
-        setTimeout(() => {
-            filterDropdown.style.display = 'none';
-        }, 150);
-    });
+    filterInput.onblur = () => setTimeout(() => {
+        filterDropdown.style.display = 'none';
+    }, 150);
 
-    downloadButton.addEventListener('click', () => {
-        downloadJSON(sources, 'config.json');
-    });
+    downloadButton.onclick = () => downloadJSON(sources, 'config.json');
 
-    resyncButton.addEventListener('click', async () => {
-        sources = await populateSources(true, tileContainer, statusDiv);
-    });
-    fetchButton.addEventListener('click', async () => {
-        sources = await populateSources(false, tileContainer, statusDiv);
-    });
+    const refresh = async force => {
+        sources = await fetchSources(force);
+        await renderTiles(sources, tileContainer, statusDiv);
+    };
+
+    resyncButton.onclick = () => refresh(true);
+    fetchButton.onclick = () => refresh(false);
 
     return {
-        setSources(list) { sources = list; },
-        loadSource,
+        init: () => refresh(false)
     };
 }

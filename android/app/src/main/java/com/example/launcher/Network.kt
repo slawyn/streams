@@ -19,6 +19,7 @@ data class Stream(
 data class StreamEntry(
     val logo: String,
     val group: String,
+    val program: String,
     val name: String,
     val streams: List<Stream>
 )
