@@ -13,6 +13,7 @@ interface ApiService {
 data class Stream(
     val id: String,
     val link: String,
+    var referer: String,
     val available: Boolean
 )
 

@@ -8,6 +8,7 @@ set AVD_DIR=%USERPROFILE%\.android\avd
 set DEV_TV=192.168.0.102:5555
 set DEV_EMU=emulator-5554
 set APK=%ANDROID_DIR%\app\build\outputs\apk\debug\app-debug.apk
+set PACKAGE=com.example.launcher
 
 if "%CMD%"=="web" (
     pushd "%WEB_DIR%"
@@ -24,7 +25,8 @@ if "%CMD%"=="build" goto :build
 if "%CMD%"=="test" (
     call :build
     adb -s %DEV_EMU% install -r %APK%
-    adb -s %DEV_EMU% shell am start -n com.example.launcher/.MainActivity
+    adb -s %DEV_EMU% shell am start -n %PACKAGE%/.MainActivity
+    @REM adb logcat
     exit /b
 )
 if "%CMD%"=="emulator wiped" (
@@ -47,7 +49,9 @@ exit /b
 :build
 :: Copy .json
 copy /Y "%WEB_DIR%\json\config.json" "%ANDROID_DIR%\app\src\main\assets\"
+
 :: Build
+rmdir /s /q "%ANDROID_DIR%\app\build\generated\res\buildnumber\values"
 pushd "%ANDROID_DIR%"
 call "%ANDROID_DIR%\gradlew.bat" preBuild
 call "%ANDROID_DIR%\gradlew.bat" assembleDebug

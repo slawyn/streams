@@ -5,6 +5,7 @@ export function initHlsPlayer(videoElement, url, streamName, statusDisplayElemen
         currentHlsInstanceRef.current.destroy();
         currentHlsInstanceRef.current = null;
     }
+    videoElement.referrerPolicy = 'no-referrer-when-downgrade';
     if (window.Hls && Hls.isSupported()) {
         currentHlsInstanceRef.current = new Hls();
         currentHlsInstanceRef.current.attachMedia(videoElement);

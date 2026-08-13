@@ -140,6 +140,37 @@
     ]
   },
   {
+    "logo": "https://iptvx.one/picons/360-podmoskovie.png",
+    "group": "Общественные",
+    "program": "https://teleprogramma.online/moskva/channel/360/",
+    "name": "360° (HD ready)",
+    "streams": [
+      {
+        "link": "https://live-vgtrksmotrim.cdnvideo.ru/vgtrksmotrim/smotrim-live-04-srt.smil/playlist.m3u8",
+        "available": true,
+        "id": "360-podmoskovie"
+      }
+    ]
+  },
+  {
+    "logo": "https://televizor24.tv/logo/100/sts.png",
+    "group": "Общественные",
+    "program": "https://teleprogramma.online/moskva/channel/sts/",
+    "name": "СТС",
+    "streams": [
+      {
+        "link": "https://streaming.thestream.cyou/live/296-req_window_0-2k_v5.m3u8",
+        "available": true,
+        "id": "streaming [2k]"
+      },
+      {
+        "link": "https://streaming.thestream.cyou/live/296-req_window_0-1k_v5.m3u8",
+        "available": true,
+        "id": "streaming [1k]"
+      }
+    ]
+  },
+  {
     "logo": "https://televizor24tochka.ru/logo/100/rossiya-1.png",
     "group": "Общественные",
     "program" : "https://teleprogramma.online/moskva/channel/rossija-1/",
@@ -159,9 +190,22 @@
     "name": "Россия K",
     "streams": [
       {
-        "link": "https://tvcdnpotok.com/579/index.m3u8?wmsAuthSign=45304cf0e85208884a08e75738a0d19f-1786632879-88i412i532i98",
+        "link": "https://streaming.thestream.cyou/live/9-req_window_0-3k_v5.m3u8",
         "available": true,
+        "referer": "https://televizor24.tv",
         "id": "streaming [3k]"
+      },
+      {
+        "link": "https://streaming.thestream.cyou/live/9-req_window_0-2k_v5.m3u8",
+        "available": true,
+        "referer": "https://televizor24.tv",
+        "id": "streaming [2k]"
+      },
+      {
+        "link": "https://streaming.thestream.cyou/live/9-req_window_0-1k_v5.m3u8",
+        "available": true,
+        "referer": "https://televizor24.tv",
+        "id": "streaming [1k]"
       }
     ]
   },
@@ -202,6 +246,24 @@
     ]
   },
   {
+    "logo": "https://televizor24.tv/logo/100/ren-tv.png",
+    "group": "Общественные",
+    "program": "https://teleprogramma.online/moskva/channel/ren-tv/",
+    "name": "РЕН ТВ",
+    "streams": [
+      {
+        "link": "https://streaming.thestream.cyou/live/14-req_window_0-3k_v5.m3u8",
+        "available": true,
+        "id": "streaming [3k]"
+      },
+      {
+        "link": "https://streaming.thestream.cyou/live/14-req_window_0-1k_v5.m3u8",
+        "available": true,
+        "id": "streaming [1k]"
+      }
+    ]
+  },
+  {
     "logo": "https://www.cableman.ru/sites/default/files/karusel.png",
     "group": "Общественные",
     "program": "https://teleprogramma.online/moskva/channel/karusel/",
@@ -234,19 +296,6 @@
         "link": "http://tvc-hls.cdnvideo.ru/tvc-res/smil:vd9221_2.smil/playlist.m3u8",
         "available": true,
         "id": "tvcentr"
-      }
-    ]
-  },
-  {
-    "logo": "https://iptvx.one/picons/360-podmoskovie.png",
-    "group": "Общественные",
-    "program": "https://teleprogramma.online/moskva/channel/360/",
-    "name": "360° (HD ready)",
-    "streams": [
-      {
-        "link": "https://live-vgtrksmotrim.cdnvideo.ru/vgtrksmotrim/smotrim-live-04-srt.smil/playlist.m3u8",
-        "available": true,
-        "id": "360-podmoskovie"
       }
     ]
   },

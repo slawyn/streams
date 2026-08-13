@@ -109,7 +109,6 @@ class MainActivity : AppCompatActivity() {
         }
         @JavascriptInterface
         fun loadProgram(index: Int, requestId: Long) {
-            // Capture the URL on the UI side before doing any background work.
             runOnUiThread {
                 if (index !in currentStreams.indices) {
                     sendProgramResult(requestId, index, null)

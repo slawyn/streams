@@ -1,650 +1,524 @@
 <!doctype html>
 <html>
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Streams</title>
-<style>
-:root{--bg:#121212;--card:#1e1e1e;--accent:#2196f3;--text:#fff}
-html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;overflow:hidden}
-.toolbar{display:flex;align-items:center;gap:12px;padding:12px;height:48px;box-sizing:border-box}
-.address{flex:1;color:var(--text);font-weight:600}
-.btn{background:var(--accent);color:#fff;border:0;padding:8px 12px;border-radius:4px}
-.content{display:grid;grid-template-columns:3fr 2fr;gap:12px;padding:12px;height:calc(100vh - 48px);box-sizing:border-box}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-content:start;overflow-y:auto;padding:3px}
-.card{background:var(--card);border-radius:8px;padding:8px;display:flex;flex-direction:column;align-items:center;text-align:center;cursor:pointer;min-width:0}
-.card img{width:100%;height:120px;object-fit:cover;border-radius:6px}
-.name{margin-top:8px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}
-.card:focus{outline:3px solid var(--accent);outline-offset:2px}
-.card.selected{outline:3px solid #ffc107;outline-offset:2px}
-.program-panel{background:var(--card);border-radius:8px;padding:12px;overflow-y:auto;min-width:0}
-.program-header{font-size:18px;font-weight:bold;margin-bottom:12px}
-.program-item{display:flex;align-items:center;padding:6px 4px;gap:4px}
-.program-time{font-size:.75em;font-weight:bold;color:#888;background:rgba(128,128,128,.12);padding:.15em .4em;border-radius:4px;margin-right:.4em;flex-shrink:0}
-.program-item.past{opacity:.55}
-.program-item.hidden{display:none}
-.program-item.active{background:rgba(255,193,7,.15);border-left:3px solid #ffc107;padding-left:6px}
-.program-item.active .program-time{color:#ffc107;background:rgba(255,193,7,.2)}
-.no-program,.program-error{color:#888;padding:12px 0}
-.footer{position:fixed;bottom:8px;left:8px;padding:6px 10px;background:rgba(255,255,255,.03);border-radius:6px;font-size:12px}
-.debug{position:fixed;left:8px;right:8px;bottom:35px;max-height:140px;overflow:auto;padding:8px;background:rgba(0,0,0,.92);color:#00ff66;font:11px monospace;white-space:pre-wrap;z-index:9999;display:none}
-.program-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:20px 0;color:#888}
-.program-loading .gear{width:22px;height:22px;border:3px solid rgba(255,255,255,.18);border-top-color:var(--accent);border-radius:50%;animation:program-spin .8s linear infinite;box-sizing:border-box}
-@keyframes program-spin{to{transform:rotate(360deg)}}
-</style>
-</head>
-<body>
-
-<div class="toolbar">
-<div class="address" id="address">...</div>
-<button class="btn" id="loadRemote">Load Remote</button>
-</div>
-
-<div class="content">
-<div id="grid" class="grid"></div>
-
-<div id="programPanel" class="program-panel">
-<div id="programTitle" class="program-header">Program</div>
-<div id="program"><div class="no-program">Select a stream</div></div>
-</div>
-</div>
-
-<div class="debug" id="debug"></div>
-<div class="footer" id="version">v</div>
-
-<script>
-let streams=[];
-let selectedIndex=-1;
-let elements={};
-let programRequestId=0;
-let lastActivatedIndex=-1;
-let lastActivatedTime=0;
-
-const programCache=new Map();
-const ACTIVATION_DEBOUNCE=450;
-const LONG_PRESS=600;
-
-function debug(...args){
- const message=args.map(v=>{
-  if(typeof v==='string')return v;
-  try{return JSON.stringify(v)}catch{return String(v)}
- }).join(' ');
- console.log('[WEB]',message);
- const panel=elements.debug||document.getElementById('debug');
- if(panel){
-  panel.textContent+=message+'\n';
-  panel.scrollTop=panel.scrollHeight;
- }
-}
-
-function checkElement(name,id){
- const element=document.getElementById(id);
- if(!element)debug('ERROR: missing element #'+id);
- elements[name]=element;
- return element;
-}
-
-function checkAndroidFunction(name){
- const exists=!!window.Android&&typeof window.Android[name]==='function';
- debug('Android.'+name+':',exists?'OK':'MISSING');
- return exists;
-}
-
-function activateCard(index){
- const now=Date.now();
-
- if(lastActivatedIndex===index&&now-lastActivatedTime<ACTIVATION_DEBOUNCE){
-  debug('DUPLICATE ACTIVATION:',index);
-  return;
- }
-
- lastActivatedIndex=index;
- lastActivatedTime=now;
-
- debug('ACTIVATE:',index);
-
- if(!checkAndroidFunction('onItemClicked'))return;
-
- try{
-  window.Android.onItemClicked(index);
- }catch(error){
-  debug('onItemClicked ERROR:',error.message||error);
- }
-}
-
-function activateLongClick(index){
- debug('LONG CLICK:',index);
-
- if(!checkAndroidFunction('onItemLongClicked')){
-  debug('onItemLongClicked MISSING');
-  return;
- }
-
- try{
-  window.Android.onItemLongClicked(index);
-  debug('onItemLongClicked CALLED:',index);
- }catch(error){
-  debug('onItemLongClicked ERROR:',error.message||error);
- }
-}
-
-function setupCard(card,index,name){
- let timer=null;
- let longPressed=false;
- let keyActive=false;
- let clickBlocked=false;
-
- function startLongPress(){
-  if(timer)return;
-
-  longPressed=false;
-
-  timer=setTimeout(()=>{
-   timer=null;
-   longPressed=true;
-   clickBlocked=true;
-   debug('LONG PRESS FIRED:',index);
-   activateLongClick(index);
-  },LONG_PRESS);
- }
-
- function cancelLongPress(){
-  if(timer!==null){
-   clearTimeout(timer);
-   timer=null;
-  }
- }
-
- function finishKey(){
-  if(!keyActive)return;
-
-  keyActive=false;
-  cancelLongPress();
-
-  if(longPressed){
-   longPressed=false;
-   setTimeout(()=>clickBlocked=false,300);
-   return;
-  }
-
-  activateCard(index);
-  clickBlocked=true;
-  setTimeout(()=>clickBlocked=false,300);
- }
-
- card.addEventListener('focus',()=>{
-  debug('FOCUS:',index,name);
-  setFocusedCard(card,index,name);
- });
-
- card.addEventListener('keydown',event=>{
-  const select=event.keyCode===23||
-    event.key==='Enter'||
-    event.key==='Select'||
-    event.key==='OK';
-
-  if(!select)return;
-
-  event.preventDefault();
-  event.stopPropagation();
-
-  if(keyActive)return;
-
-  keyActive=true;
-
-  debug(
-   'KEY DOWN:',
-   index,
-   'key=',event.key,
-   'keyCode=',event.keyCode
-  );
-
-  startLongPress();
- });
-
- card.addEventListener('keyup',event=>{
-  const select=event.keyCode===23||
-    event.key==='Enter'||
-    event.key==='Select'||
-    event.key==='OK';
-
-  if(!select)return;
-
-  event.preventDefault();
-  event.stopPropagation();
-
-  debug('KEY UP:',index);
-
-  finishKey();
- });
-
- card.addEventListener('click',event=>{
-  event.preventDefault();
-  event.stopPropagation();
-
-  debug('CLICK:',index);
-
-  if(clickBlocked){
-   clickBlocked=false;
-   return;
-  }
-
-  if(keyActive)return;
-
-  if(longPressed){
-   longPressed=false;
-   return;
-  }
-
-  activateCard(index);
- });
-
- card.addEventListener('pointerdown',event=>{
-  if(event.pointerType==='mouse'&&event.button!==0)return;
-
-  debug(
-   'POINTER DOWN:',
-   index,
-   event.pointerType
-  );
-
-  startLongPress();
- });
-
- card.addEventListener('pointerup',event=>{
-  if(event.pointerType==='mouse'&&event.button!==0)return;
-
-  debug('POINTER UP:',index);
-
-  cancelLongPress();
-
-  if(longPressed){
-   longPressed=false;
-   clickBlocked=true;
-   setTimeout(()=>clickBlocked=false,300);
-  }
- });
-
- card.addEventListener('pointercancel',()=>{
-  debug('POINTER CANCEL:',index);
-  cancelLongPress();
-  longPressed=false;
- });
-
- card.addEventListener('pointerleave',()=>{
-  if(!keyActive)cancelLongPress();
- });
-}
-
-function showProgramLoading(){
- elements.program.innerHTML=
-  '<div class="program-loading">'+
-  '<div class="gear"></div>'+
-  '<span>Loading...</span>'+
-  '</div>';
-}
-
-function renderProgram(list){
- elements.program.innerHTML='';
-
- if(!Array.isArray(list)||!list.length){
-  elements.program.innerHTML=
-   '<div class="no-program">Keine Programmdaten verfügbar.</div>';
-  return;
- }
-
- for(const item of list){
-  if(!item||!item.time||!item.time.trim())continue;
-
-  const row=document.createElement('div');
-  row.className='program-item';
-
-  if(Array.isArray(item.attributes)){
-   for(const attribute of item.attributes){
-    if(typeof attribute==='string'&&attribute.trim()){
-     row.classList.add(attribute);
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Streams</title>
+  <style>
+    :root {
+      --bg: #121212;
+      --card: #1e1e1e;
+      --accent: #2196f3;
+      --text: #fff
     }
-   }
-  }
-
-  const time=document.createElement('span');
-  time.className='program-time';
-  time.textContent=item.time;
-
-  const title=document.createElement('span');
-  title.className='program-title';
-  title.textContent=item.title||'';
-
-  row.append(time,title);
-  elements.program.appendChild(row);
- }
-}
-
-function onProgramLoaded(requestId,index,data){
- debug(
-  'PROGRAM LOADED:',
-  requestId,
-  index
- );
-
- if(requestId!==programRequestId){
-  debug('STALE PROGRAM:',requestId);
-  return;
- }
-
- if(index!==selectedIndex){
-  debug('WRONG PROGRAM INDEX:',index);
-  return;
- }
-
- try{
-  if(!data){
-   if(programCache.has(index)){
-    renderProgram(programCache.get(index));
-   }else{
-    elements.program.innerHTML=
-     '<div class="program-error">Fehler beim Laden des TV-Programms.</div>';
-   }
-   return;
-  }
-
-  const list=typeof data==='string'?JSON.parse(data):data;
-
-  if(!Array.isArray(list)){
-   throw new Error('Program response is not an array');
-  }
-
-  programCache.set(index,list);
-  renderProgram(list);
-
- }catch(error){
-  debug(
-   'onProgramLoaded ERROR:',
-   error.message||error
-  );
-
-  if(programCache.has(index)){
-   renderProgram(programCache.get(index));
-  }else{
-   elements.program.innerHTML=
-    '<div class="program-error">Fehler beim Laden des TV-Programms.</div>';
-  }
- }
-}
-
-function loadProgram(index,name){
- const requestId=++programRequestId;
-
- selectedIndex=index;
-
- elements.programTitle.textContent=
-  name||'Program';
-
- debug(
-  'FOCUS PROGRAM:',
-  index,
-  name,
-  'REQUEST:',
-  requestId
- );
-
- const cached=programCache.get(index);
-
- if(cached){
-  renderProgram(cached);
- }else{
-  showProgramLoading();
- }
-
- if(!checkAndroidFunction('loadProgram')){
-  elements.program.innerHTML=
-   '<div class="program-error">loadProgram unavailable</div>';
-  return;
- }
-
- try{
-  window.Android.loadProgram(index,requestId);
- }catch(error){
-  debug(
-   'loadProgram ERROR:',
-   error.message||error
-  );
-
-  if(requestId===programRequestId&&!cached){
-   elements.program.innerHTML=
-    '<div class="program-error">Fehler beim Laden des TV-Programms.</div>';
-  }
- }
-}
 
-function setFocusedCard(card,index,name){
- debug('SELECTED/FOCUSED:',index,name);
-
- document
-  .querySelectorAll('.card.selected')
-  .forEach(element=>{
-   element.classList.remove('selected');
-  });
-
- card.classList.add('selected');
-
- if(selectedIndex===index)return;
-
- loadProgram(index,name);
-}
-
-function updateStreams(json){
- try{
-  debug('updateStreams called');
-
-  const data=typeof json==='string'
-   ?JSON.parse(json)
-   :json;
-
-  if(!Array.isArray(data)){
-   debug('ERROR: streams is not an array');
-   return;
-  }
-
-  streams=data;
-  selectedIndex=-1;
-
-  elements.grid.innerHTML='';
-
-  streams.forEach((stream,index)=>{
-   if(!stream||typeof stream!=='object'){
-    debug('WARNING: invalid stream:',index);
-    return;
-   }
-
-   const card=document.createElement('div');
-
-   card.className='card';
-   card.tabIndex=0;
-   card.dataset.index=index;
-
-   const img=document.createElement('img');
-
-   img.src=stream.logo||'';
-   img.alt=stream.name||'';
-
-   img.onerror=()=>{
-    img.style.visibility='hidden';
-   };
-
-   const name=document.createElement('div');
-
-   name.className='name';
-   name.textContent=stream.name||'';
-
-   card.append(img,name);
-
-   setupCard(
-    card,
-    index,
-    stream.name||''
-   );
-
-   elements.grid.appendChild(card);
-  });
-
-  const firstCard=
-   elements.grid.querySelector('.card');
-
-  if(firstCard){
-   firstCard.focus();
-   debug('FIRST CARD FOCUSED');
-  }else{
-   debug('WARNING: no stream cards');
-  }
-
- }catch(error){
-  debug(
-   'updateStreams ERROR:',
-   error.message||error
-  );
- }
-}
-
-function applyTranslations(){
- try{
-  const translations=
-   window.translations||{};
-
-  if(translations.title){
-   document.title=translations.title;
-  }
-
-  if(translations.loadRemote){
-   elements.loadRemote.textContent=
-    translations.loadRemote;
-  }
-
-  elements.programTitle.textContent=
-   translations.program||'Program';
-
-  const initialMessage=
-   elements.program.querySelector('.no-program');
-
-  if(initialMessage){
-   initialMessage.textContent=
-    translations.selectStream||'Select stream';
-  }
-
-  window.remoteLoadNotAvailableMessage=
-   translations.remoteLoadNotAvailable||
-   'Remote load not available';
-
- }catch(error){
-  debug(
-   'translations ERROR:',
-   error.message||error
-  );
- }
-}
-
-function initMeta(){
- if(checkAndroidFunction('getBaseUrl')){
-  try{
-   elements.address.textContent=
-    window.Android.getBaseUrl()||'...';
-  }catch(error){
-   debug(
-    'getBaseUrl ERROR:',
-    error.message||error
-   );
-  }
- }
-
- if(checkAndroidFunction('getVersion')){
-  try{
-   elements.version.textContent=
-    window.Android.getVersion()||'v';
-  }catch(error){
-   debug(
-    'getVersion ERROR:',
-    error.message||error
-   );
-  }
- }
-}
-
-function init(){
- debug('Initializing...');
-
- checkElement('grid','grid');
- checkElement('program','program');
- checkElement('programTitle','programTitle');
- checkElement('programPanel','programPanel');
- checkElement('address','address');
- checkElement('version','version');
- checkElement('loadRemote','loadRemote');
- checkElement('debug','debug');
-
- if(!elements.grid||
-    !elements.program||
-    !elements.programTitle||
-    !elements.programPanel||
-    !elements.address||
-    !elements.version||
-    !elements.loadRemote){
-  debug('ERROR: required DOM elements missing');
-  return;
- }
-
- debug(
-  'window.Android:',
-  !!window.Android
- );
-
- if(window.Android){
-  checkAndroidFunction('loadProgram');
-  checkAndroidFunction('onItemClicked');
-  checkAndroidFunction('onItemLongClicked');
-  checkAndroidFunction('loadRemoteStreams');
-  checkAndroidFunction('requestLocalStreams');
-  checkAndroidFunction('getBaseUrl');
-  checkAndroidFunction('getVersion');
- }else{
-  debug('WARNING: Android bridge unavailable');
- }
-
- elements.loadRemote.addEventListener('click',()=>{
-  debug('Load Remote clicked');
-
-  if(!checkAndroidFunction('loadRemoteStreams'))return;
-
-  try{
-   window.Android.loadRemoteStreams();
-  }catch(error){
-   debug(
-    'loadRemoteStreams ERROR:',
-    error.message||error
-   );
-  }
- });
-
- initMeta();
- applyTranslations();
-
- if(checkAndroidFunction('requestLocalStreams')){
-  try{
-   window.Android.requestLocalStreams();
-  }catch(error){
-   debug(
-    'requestLocalStreams ERROR:',
-    error.message||error
-   );
-  }
- }
-
- debug('Initialization complete');
-}
-
-document.addEventListener(
- 'DOMContentLoaded',
- init
-);
-</script>
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      overflow: hidden
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 12px;
+      padding: 12px;
+      height: 100vh;
+      box-sizing: border-box
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-auto-rows: auto;
+      gap: 12px;
+      align-content: start;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 3px;
+      min-height: 0
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 8px;
+      aspect-ratio: 1;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+      min-width: 0
+    }
+
+    .card img {
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+      object-fit: cover;
+      border-radius: 6px
+    }
+
+    .name {
+      margin-top: 8px;
+      font-size: 14px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      width: 100%
+    }
+
+    .card:focus {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px
+    }
+
+    .card.selected {
+      outline: 3px solid #ffc107;
+      outline-offset: 2px
+    }
+
+    .program-column {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 48px;
+      box-sizing: border-box
+    }
+
+    .address {
+      flex: 1;
+      color: var(--text);
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap
+    }
+
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: 0;
+      padding: 8px 12px;
+      border-radius: 4px
+    }
+
+    .program-panel {
+      flex: 1;
+      background: var(--card);
+      border-radius: 8px;
+      padding: 12px;
+      overflow-y: auto;
+      min-width: 0;
+      min-height: 0
+    }
+
+    .program-panel:focus {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px
+    }
+
+    .program-header {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 12px
+    }
+
+    .program-item {
+      display: flex;
+      align-items: center;
+      padding: 6px 4px;
+      gap: 4px
+    }
+
+    .program-time {
+      font-size: .75em;
+      font-weight: bold;
+      color: #888;
+      background: rgba(128, 128, 128, .12);
+      padding: .15em .4em;
+      border-radius: 4px;
+      margin-right: .4em;
+      flex-shrink: 0
+    }
+
+    .program-item.past {
+      opacity: .55
+    }
+
+    .program-item.hidden {
+      display: none
+    }
+
+    .program-item.active {
+      background: rgba(255, 193, 7, .15);
+      border-left: 3px solid #ffc107;
+      padding-left: 6px
+    }
+
+    .program-item.active .program-time {
+      color: #ffc107;
+      background: rgba(255, 193, 7, .2)
+    }
+
+    .no-program,
+    .program-error {
+      color: #888;
+      padding: 12px 0
+    }
+
+    .footer {
+      position: fixed;
+      bottom: 8px;
+      left: 8px;
+      padding: 6px 10px;
+      background: rgba(255, 255, 255, .03);
+      border-radius: 6px;
+      font-size: 12px
+    }
+
+    .debug {
+      position: fixed;
+      left: 8px;
+      right: 8px;
+      bottom: 35px;
+      max-height: 140px;
+      overflow: auto;
+      padding: 8px;
+      background: rgba(0, 0, 0, .92);
+      color: #00ff66;
+      font: 11px monospace;
+      white-space: pre-wrap;
+      z-index: 9999;
+      display: none
+    }
+
+    .program-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 20px 0;
+      color: #888
+    }
+
+    .program-loading .gear {
+      width: 22px;
+      height: 22px;
+      border: 3px solid rgba(255, 255, 255, .18);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: program-spin .8s linear infinite;
+      box-sizing: border-box
+    }
+
+    @keyframes program-spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="content">
+    <div id="grid" class="grid"></div>
+    <div class="program-column">
+      <div class="toolbar">
+        <div class="address" id="address">...</div>
+        <button class="btn" id="loadRemote">Load Remote</button>
+      </div>
+      <div id="programPanel" class="program-panel" tabindex="0">
+        <div id="programTitle" class="program-header">Program</div>
+        <div id="program">
+          <div class="no-program">Select a stream</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="debug" id="debug"></div>
+  <div class="footer" id="version">v</div>
+  <script>
+    let streams = [], selectedIndex = -1, elements = {}, programRequestId = 0;
+    let lastActivatedIndex = -1, lastActivatedTime = 0;
+    const programCache = new Map(), ACTIVATION_DEBOUNCE = 450, LONG_PRESS = 600;
+
+    function debug(...a) {
+      const m = a.map(v => typeof v === 'string' ? v : (() => { try { return JSON.stringify(v) } catch { return String(v) } })()).join(' ');
+      console.log('[WEB]', m);
+      const p = elements.debug || document.getElementById('debug');
+      if (p) { p.textContent += m + '\n'; p.scrollTop = p.scrollHeight }
+    }
+
+    function checkElement(n, id) {
+      const e = document.getElementById(id);
+      if (!e) debug('ERROR: missing element #' + id);
+      elements[n] = e;
+      return e
+    }
+
+    function checkAndroidFunction(n) {
+      const e = !!window.Android && typeof window.Android[n] === 'function';
+      debug('Android.' + n + ':', e ? 'OK' : 'MISSING');
+      return e
+    }
+
+    function activateCard(i) {
+      const n = Date.now();
+      if (lastActivatedIndex === i && n - lastActivatedTime < ACTIVATION_DEBOUNCE) return;
+      lastActivatedIndex = i;
+      lastActivatedTime = n;
+      try { window.Android.onItemClicked(i) } catch (e) { debug('onItemClicked ERROR:', e.message || e) }
+    }
+
+    function activateLongClick(i) {
+      try { window.Android.onItemLongClicked(i) } catch (e) { debug('onItemLongClicked ERROR:', e.message || e) }
+    }
+
+    function setupCard(card, index, name) {
+      let timer = null, longPressed = false, keyActive = false, clickBlocked = false;
+      const start = () => {
+        if (timer) return;
+        longPressed = false;
+        timer = setTimeout(() => {
+          timer = null;
+          longPressed = clickBlocked = true;
+          activateLongClick(index)
+        }, LONG_PRESS)
+      };
+      const cancel = () => {
+        if (timer !== null) { clearTimeout(timer); timer = null }
+      };
+      const finish = () => {
+        if (!keyActive) return;
+        keyActive = false;
+        cancel();
+        if (longPressed) {
+          longPressed = false;
+          setTimeout(() => clickBlocked = false, 300);
+          return
+        }
+        activateCard(index);
+        clickBlocked = true;
+        setTimeout(() => clickBlocked = false, 300)
+      };
+      card.addEventListener('focus', () => setFocusedCard(card, index, name));
+      card.addEventListener('keydown', e => {
+        const select = [23, 'Enter', 'Select', 'OK'].includes(e.keyCode) || ['Enter', 'Select', 'OK'].includes(e.key);
+        if (!select) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (keyActive) return;
+        keyActive = true;
+        start()
+      });
+      card.addEventListener('keyup', e => {
+        const select = [23, 'Enter', 'Select', 'OK'].includes(e.keyCode) || ['Enter', 'Select', 'OK'].includes(e.key);
+        if (!select) return;
+        e.preventDefault();
+        e.stopPropagation();
+        finish()
+      });
+      card.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (clickBlocked) { clickBlocked = false; return }
+        if (keyActive || longPressed) { longPressed = false; return }
+        activateCard(index)
+      });
+      card.addEventListener('pointerdown', e => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        start()
+      });
+      card.addEventListener('pointerup', e => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        cancel();
+        if (longPressed) {
+          longPressed = false;
+          clickBlocked = true;
+          setTimeout(() => clickBlocked = false, 300)
+        }
+      });
+      card.addEventListener('pointercancel', () => {
+        cancel();
+        longPressed = false
+      });
+      card.addEventListener('pointerleave', () => { if (!keyActive) cancel() })
+    }
+
+    function showProgramLoading() {
+      elements.program.innerHTML = '<div class="program-loading"><div class="gear"></div><span>Loading...</span></div>'
+    }
+
+    function renderProgram(list) {
+      elements.program.innerHTML = '';
+      if (!Array.isArray(list) || !list.length) {
+        elements.program.innerHTML = '<div class="no-program">Keine Programmdaten verfügbar.</div>';
+        return
+      }
+      for (const item of list) {
+        if (!item?.time?.trim()) continue;
+        const r = document.createElement('div');
+        r.className = 'program-item';
+        if (Array.isArray(item.attributes)) item.attributes.forEach(a => {
+          if (typeof a === 'string' && a.trim()) r.classList.add(a)
+        });
+        const t = document.createElement('span'), n = document.createElement('span');
+        t.className = 'program-time';
+        t.textContent = item.time;
+        n.className = 'program-title';
+        n.textContent = item.title || '';
+        r.append(t, n);
+        elements.program.appendChild(r)
+      }
+    }
+
+    function onProgramLoaded(id, index, data) {
+      if (id !== programRequestId || index !== selectedIndex) return;
+      try {
+        if (!data) {
+          if (programCache.has(index)) renderProgram(programCache.get(index));
+          else throw Error()
+        } else {
+          const list = typeof data === 'string' ? JSON.parse(data) : data;
+          if (!Array.isArray(list)) throw Error('Program response is not an array');
+          programCache.set(index, list);
+          renderProgram(list)
+        }
+      } catch (e) {
+        if (programCache.has(index)) renderProgram(programCache.get(index));
+        else elements.program.innerHTML = '<div class="program-error">Fehler beim Laden des TV-Programms.</div>'
+      }
+    }
+
+    function loadProgram(index, name) {
+      const id = ++programRequestId;
+      selectedIndex = index;
+      elements.programTitle.textContent = name || 'Program';
+      const cached = programCache.get(index);
+      cached ? renderProgram(cached) : showProgramLoading();
+      try { window.Android.loadProgram(index, id) } catch (e) {
+        if (id === programRequestId && !cached)
+          elements.program.innerHTML = '<div class="program-error">Fehler beim Laden des TV-Programms.</div>'
+      }
+    }
+
+    function setFocusedCard(card, index, name) {
+      document.querySelectorAll('.card.selected').forEach(e => e.classList.remove('selected'));
+      card.classList.add('selected');
+      if (selectedIndex !== index) loadProgram(index, name)
+    }
+
+    function updateStreams(json) {
+      try {
+        const data = typeof json === 'string' ? JSON.parse(json) : json;
+        if (!Array.isArray(data)) return;
+        streams = data;
+        selectedIndex = -1;
+        elements.grid.innerHTML = '';
+        streams.forEach((s, i) => {
+          if (!s || typeof s !== 'object') return;
+          const c = document.createElement('div'), img = document.createElement('img'), n = document.createElement('div');
+          c.className = 'card';
+          c.tabIndex = 0;
+          c.dataset.index = i;
+          img.src = s.logo || '';
+          img.alt = s.name || '';
+          img.onerror = () => img.style.visibility = 'hidden';
+          n.className = 'name';
+          n.textContent = s.name || '';
+          c.append(img, n);
+          setupCard(c, i, s.name || '');
+          elements.grid.appendChild(c)
+        });
+        moveFocusToCard(0)
+      } catch (e) { debug('updateStreams ERROR:', e.message || e) }
+    }
+
+    function applyTranslations() {
+      try {
+        const t = window.translations || {};
+        if (t.title) document.title = t.title;
+        if (t.loadRemote) elements.loadRemote.textContent = t.loadRemote;
+        elements.programTitle.textContent = t.program || 'Program';
+        const m = elements.program.querySelector('.no-program');
+        if (m) m.textContent = t.selectStream || 'Select stream';
+        window.remoteLoadNotAvailableMessage = t.remoteLoadNotAvailable || 'Remote load not available'
+      } catch (e) { debug('translations ERROR:', e.message || e) }
+    }
+
+    function initMeta() {
+      try { elements.address.textContent = window.Android.getBaseUrl() || '...' } catch (e) { }
+      try { elements.version.textContent = window.Android.getVersion() || 'v' } catch (e) { }
+    }
+
+    function moveFocusToCard(index = 0) {
+      const cards = elements.grid.querySelectorAll('.card');
+      if (!cards.length) return;
+      cards[Math.max(0, Math.min(index, cards.length - 1))].focus()
+    }
+
+    function moveFocusToProgram() {
+      elements.programPanel.focus()
+    }
+
+    function init() {
+      ['grid', 'program', 'programTitle', 'programPanel', 'address', 'version', 'loadRemote', 'debug'].forEach(id => checkElement(id, id));
+      if (!elements.grid || !elements.program || !elements.programTitle || !elements.programPanel || !elements.address || !elements.version || !elements.loadRemote) return;
+      if (window.Android) {
+        ['loadProgram', 'onItemClicked', 'onItemLongClicked', 'loadRemoteStreams', 'requestLocalStreams', 'getBaseUrl', 'getVersion'].forEach(checkAndroidFunction)
+      }
+      elements.loadRemote.addEventListener('click', () => {
+        try { window.Android.loadRemoteStreams() } catch (e) { debug('loadRemoteStreams ERROR:', e.message || e) }
+      });
+      elements.loadRemote.addEventListener('keydown', e => {
+        if (e.key !== 'ArrowDown' && e.keyCode !== 20) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const selected = elements.grid.querySelector('.card.selected');
+        moveFocusToCard(selected ? Number(selected.dataset.index) : 0)
+      });
+      elements.grid.addEventListener('keydown', e => {
+        if (e.key !== 'ArrowRight') return;
+        const cards = [...elements.grid.querySelectorAll('.card')], current = document.activeElement, index = cards.indexOf(current);
+        if (index < 0) return;
+        if (index % 4 !== 3 && index !== cards.length - 1) return;
+        e.preventDefault();
+        e.stopPropagation();
+        moveFocusToProgram()
+      });
+      elements.programPanel.addEventListener('keydown', e => {
+        if (e.key !== 'ArrowLeft') return;
+        e.preventDefault();
+        e.stopPropagation();
+        const selected = elements.grid.querySelector('.card.selected');
+        moveFocusToCard(selected ? Number(selected.dataset.index) : 0)
+      });
+      document.addEventListener('focusin', e => {
+        if (!e.target.closest('.card'))
+          document.querySelectorAll('.card.selected').forEach(c => c.classList.remove('selected'))
+      });
+      initMeta();
+      applyTranslations();
+      try { window.Android.requestLocalStreams() } catch (e) { debug('requestLocalStreams ERROR:', e.message || e) }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
 </body>
+
 </html>
