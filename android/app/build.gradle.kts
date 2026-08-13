@@ -96,6 +96,7 @@ tasks.named("preBuild") {
 --------------------------------------------------------- */
 
 dependencies {
+    implementation("org.jsoup:jsoup:1.21.1")
     implementation("com.google.android.material:material:1.10.0")
 
     implementation("androidx.media3:media3-exoplayer-hls:1.7.1")
@@ -110,7 +111,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.10.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
 
-    implementation("androidx.appcompat:appcompat:1.7.0") // ✔ fixed version
+    implementation("androidx.appcompat:appcompat:1.7.0")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

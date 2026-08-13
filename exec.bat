@@ -1,51 +1,58 @@
 @echo off
 
 set CMD=%1
-set APK=%CD%\android\app\build\outputs\apk\debug\app-debug.apk
-set WEB_CONFIG_JSON=%CD%\web\json\config.json
-set ANDROID=%CD%\android
-set APP_CONFIG_JSON=%ANDROID%\app\src\main\assets\
-set GRADLEW=%ANDROID%\gradlew.bat
-set EMULATOR=%USERPROFILE%\AppData\Local\Android\Sdk\emulator
-set AVD=%USERPROFILE%\.android\avd
-set DEVICE=192.168.0.101:5555
+set ANDROID_DIR=%~dp0%android
+set WEB_DIR=%~dp0%web
+set EMULATOR_DIR=%USERPROFILE%\AppData\Local\Android\Sdk\emulator
+set AVD_DIR=%USERPROFILE%\.android\avd
+set DEV_TV=192.168.0.102:5555
+set DEV_EMU=emulator-5554
+set APK=%ANDROID_DIR%\app\build\outputs\apk\debug\app-debug.apk
+
 if "%CMD%"=="web" (
-    cd web
+    pushd "%WEB_DIR%"
     python app.py
+    popd
     exit /b
 )
-
 if "%CMD%"=="upload" (
-    adb connect %DEVICE%
-    adb -s %DEVICE% install -r %APK%
+    adb connect %DEV_TV%
+    adb -s %DEV_TV% install -r %APK%
     exit /b
 )
-
+if "%CMD%"=="build" goto :build
 if "%CMD%"=="test" (
-    copy %WEB_CONFIG_JSON% %APP_CONFIG_JSON%
-    pushd %ANDROID%
-    %GRADLEW% preBuild
-    %GRADLEW% assembleDebug
-    popd
-    adb -s emulator-5554 install -r %APK%
-    adb -s emulator-5554 shell am start -n com.example.launcher/.MainActivity
+    call :build
+    adb -s %DEV_EMU% install -r %APK%
+    adb -s %DEV_EMU% shell am start -n com.example.launcher/.MainActivity
     exit /b
 )
-
-if "%CMD%"=="build" (
-    copy %WEB_CONFIG_JSON% %APP_CONFIG_JSON%
-    pushd %ANDROID%
-    %GRADLEW% preBuild
-    %GRADLEW% assembleDebug
+if "%CMD%"=="emulator wiped" (
+    pushd "%AVD_DIR%"
+    "%EMULATOR_DIR%\emulator.exe" -avd Television_720p -wipe-data
     popd
     exit /b
 )
-
 if "%CMD%"=="emulator" (
-    pushd %AVD%
-    %EMULATOR%\emulator -avd Television_720p -wipe-data
+    pushd "%AVD_DIR%"
+    "%EMULATOR_DIR%\emulator.exe" -avd Television_720p
     popd
+    exit /b
 )
+
+:exit 
+exit /b
+
+
+:build
+:: Copy .json
+copy /Y "%WEB_DIR%\json\config.json" "%ANDROID_DIR%\app\src\main\assets\"
+:: Build
+pushd "%ANDROID_DIR%"
+call "%ANDROID_DIR%\gradlew.bat" preBuild
+call "%ANDROID_DIR%\gradlew.bat" assembleDebug
+popd
+exit /b
 
 @REM @echo off
 @REM set SOURCE_VIDEO=

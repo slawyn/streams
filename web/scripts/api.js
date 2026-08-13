@@ -42,7 +42,7 @@ export async function fetchSources(resync) {
         console.log(`Fetching stream list from ${api}...`);
         const response = await fetch(api);
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status} from ${apiPath}`);
+            throw new Error(`HTTP error! status: ${response.status} from ${api}`);
         }
         const data = await response.json();
         if (!Array.isArray(data)) {

@@ -6,5 +6,10 @@
   "statusNoStreams": "Потоки отсутствуют",
   "title": "Потоки",
   "loadRemote": "Загрузить с сервера",
-  "remoteLoadNotAvailable": "Удалённая загрузка недоступна"
-} 
+  "remoteLoadNotAvailable": "Удалённая загрузка недоступна",
+  "program": "Программа",
+  "programLoading": "Загрузка...",
+  "programEmpty": "Данные программы отсутствуют",
+  "programLoadError": "Ошибка загрузки программы",
+  "programRefreshError": "Не удалось обновить программу"
+}

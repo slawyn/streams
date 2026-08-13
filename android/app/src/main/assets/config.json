@@ -13,7 +13,7 @@
       {
         "link": "https://streaming.goodstream.icu/live/210-req_window_0-2k_v5.m3u8",
         "available": true,
-        "id": "streaming [1k]"
+        "id": "streaming [2k]"
       },
       {
         "link": "https://streaming.goodstream.icu/live/210-req_window_0-1k_v5.m3u8",
@@ -47,6 +47,7 @@
   },
   {
     "logo": "https://televizor24tochka.ru/logo/100/dom-kino.png",
+    "program": "https://teleprogramma.online/moskva/channel/dom-kino/",
     "group": "Общественные",
     "name": "Дом Кино",
     "streams": [
@@ -69,7 +70,7 @@
   },
    {
     "logo": "https://iptvx.one/picons/rt-doc.png",
-    "group": "Информационные",
+    "program": "https://teleprogramma.online/moskva/channel/rt-documentary/",
     "name": "RTД (HD)",
     "streams": [
       {
@@ -82,6 +83,7 @@
    {
     "logo": "https://televizor24tochka.ru/logo/100/tnt.png",
     "group": "Информационные",
+    "program": "https://teleprogramma.online/moskva/channel/tnt/",
     "name": "ТНТ",
     "streams": [
       {
@@ -94,6 +96,7 @@
    {
     "logo": "https://xn--h1aeej.xn--p1ai/players/icons/logo_zvezda.png",
     "group": "Информационные",
+    "program": "https://teleprogramma.online/moskva/channel/zvezda/",
     "name": "Звезда",
     "streams": [
       {
@@ -116,6 +119,7 @@
   {
     "logo": "https://static.wikia.nocookie.net/logopedia/images/3/33/RTR.png",
     "group": "Общественные",
+    "program": "https://teleprogramma.online/moskva/channel/rtr-planeta/",
     "name": "Россия РТР",
     "streams": [
       {
@@ -138,42 +142,51 @@
   {
     "logo": "https://televizor24tochka.ru/logo/100/rossiya-1.png",
     "group": "Общественные",
+    "program" : "https://teleprogramma.online/moskva/channel/rossija-1/",
     "name": "Россия 1",
     "streams": [
       {
-        "link": "https://streaming.thestream.cyou/live/211-req_window_0-2k_v5.m3u8",
+        "link": "https://nlv1.sysnet.top/video/vrkqt87zD0d2r6pFuQO9Aw/3/playlist.m3u8",
         "available": true,
-        "id": "streaming [2k]"
+        "id": "streaming [low]"
       }
     ]
   },
   {
     "logo": "https://televizor24tochka.ru/logo/100/rossiya-kultura.png",
     "group": "Общественные",
+    "program": "https://teleprogramma.online/moskva/channel/kultura/",
     "name": "Россия K",
     "streams": [
       {
-        "link": "https://streaming.thestream.cyou/live/9-req_window_0-1k_v5.m3u8",
-        "available": true,
-        "id": "streaming [1k]"
-      }
-    ]
-  },
-  {
-    "logo": "https://televizor24tochka.ru/logo/100/rossiya-24.png",
-    "group": "Общественные",
-    "name": "Россия 24",
-    "streams": [
-      {
-        "link": "https://streaming.thestream.cyou/live/30-req_window_0-3k_v5.m3u8",
+        "link": "https://tvcdnpotok.com/579/index.m3u8?wmsAuthSign=45304cf0e85208884a08e75738a0d19f-1786632879-88i412i532i98",
         "available": true,
         "id": "streaming [3k]"
       }
     ]
   },
   {
+    "logo": "https://televizor24tochka.ru/logo/100/rossiya-24.png",
+    "group": "Общественные",
+    "program": "https://teleprogramma.online/moskva/channel/rossija-24/",
+    "name": "Россия 24",
+    "streams": [
+      {
+        "link": "https://streaming.thestream.cyou/live/30-req_window_0-3k_v5.m3u8",
+        "available": true,
+        "id": "streaming [3k]"
+      },
+       {
+        "link": "https://streaming.thestream.cyou/live/30-req_window_0-1k_v5.m3u8",
+        "available": true,
+        "id": "streaming [1k]"
+      }
+    ]
+  },
+  {
     "logo": "https://gorod62.tv/wp-content/uploads/2017/12/1200x630-750x375.jpg",
     "group": "Общественные",
+    "program": "https://teleprogramma.online/moskva/channel/rbk/",
     "name": "РБК",
     "streams": [
       {
@@ -191,6 +204,7 @@
   {
     "logo": "https://www.cableman.ru/sites/default/files/karusel.png",
     "group": "Общественные",
+    "program": "https://teleprogramma.online/moskva/channel/karusel/",
     "name": "Карусель",
     "streams": [
       {
@@ -213,6 +227,7 @@
   {
     "logo": "https://iptvx.one/picons/tvcentr.png",
     "group": "Общественные",
+    "program": "https://teleprogramma.online/moskva/channel/tv-centr/",
     "name": "ТВ Центр (FWVGA)",
     "streams": [
       {
@@ -225,6 +240,7 @@
   {
     "logo": "https://iptvx.one/picons/360-podmoskovie.png",
     "group": "Общественные",
+    "program": "https://teleprogramma.online/moskva/channel/360/",
     "name": "360° (HD ready)",
     "streams": [
       {
@@ -249,10 +265,11 @@
   {
     "logo": "https://iptvx.one/picons/domashny.png",
     "group": "Развлекательные",
+    "program": "https://teleprogramma.online/moskva/channel/domashnij/",
     "name": "Домашний (HD)",
     "streams": [
       {
-        "link": "http://serv25.vintera.tv:8081/kaleidoscop/kaleidoscop_sd/playlist.m3u8",
+        "link": "https://frw1.sysnet.top/video/t6ndlTlOddN5SUMPUeX5iw/10/playlist.m3u8",
         "available": true,
         "id": "domashny"
       }

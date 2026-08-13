@@ -1,457 +1,370 @@
-#!/usr/bin/env python
-
-
+#!/usr/bin/env python3
 
 import os
-import posixpath
-import http.server
-import urllib.parse
+import re
+import json
 import html
 import shutil
 import mimetypes
-import re
+import posixpath
+import urllib.parse
+import http.server
+from io import BytesIO
+from concurrent.futures import ThreadPoolExecutor
+
 import requests
 from bs4 import BeautifulSoup
-import json
-import threading
-import queue
-from io import BytesIO
-from urllib.parse import urlparse, parse_qs, unquote    
-import http.client
-
-__version__ = "0.x"
-__all__ = ["SimpleHTTPRequestHandler"]
-__author__ = ""
-__home_page__ = ""
 
 
-def parse_tv_schedule(html_content):
-    soup = BeautifulSoup(html_content, 'html.parser')
-    
-    square = soup.find('div', class_='square', id='progListSquare')
-    if not square:
-        return json.dumps([], ensure_ascii=False)
-        
-    channel_data = square.find(id='channel_data')
-    if not channel_data:
-        return json.dumps([], ensure_ascii=False)
-        
-    program_list = []
-    
-    for prog in channel_data.find_all('div', class_=lambda c: c and 'prog' in c.split()):
-        time_div = prog.find('div', class_='time')
-        title_div = prog.find('div', class_='title')
-        
-        program_list.append({
-            "time": time_div.get_text(strip=True) if time_div else "",
-            "title": title_div.get_text(strip=True) if title_div else "",
-            "attributes": [cls for cls in prog.get('class', []) if cls != 'prog']
-        })
-        
-    return json.dumps(program_list, ensure_ascii=False, indent=4)
+HOST = ""
+PORT = 80
+ROOT = os.getcwd()
+CONFIG = os.path.join(ROOT, "json", "config.json")
+STREAMS = os.path.join(ROOT, "streams")
 
-def is_downloadable(url):
+
+def read(path):
     try:
-        print(url)
-        parsed = urlparse(url)
-        conn_class = http.client.HTTPSConnection if parsed.scheme == "https" else http.client.HTTPConnection
-        conn = conn_class(parsed.netloc)
-        conn.request("HEAD", parsed.path or "/")
-        response = conn.getresponse()
-
-        content_type = response.getheader("Content-Type", "")
-        content_disposition = response.getheader("Content-Disposition", "")
-
-        conn.close()
-
-        if "attachment" in content_disposition.lower():
-            return True
-        if any(ct in content_type.lower() for ct in ['application/', 'image/', 'audio/', 'video/', 'octet-stream']):
-            return True
-        return False
-    except Exception as e:
-        print("Error:", e)
-        return False
-
-def write_file(path, data):
-    try:
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write(data)   
-        return True
-    except Exception as e:
-        print(f"Error writing file {path}: {e}")
-        return False
-
-def load_file(path):
-    if os.path.exists(path):
         with open(path, encoding="utf-8") as f:
             return f.read()
-    else:
+    except OSError:
         return ""
 
-def validate_confg(data):
-    """Validate streams in the given config data.
 
-    Accepts either:
-    - a list of groups where each group has a 'streams' list, or
-    - a flat list of stream entries (old format)
+def write(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(data)
 
-    Updates each stream's 'available' boolean in-place and returns the updated data.
-    """
-    q = queue.Queue()
 
-    def worker():
-        while True:
-            item = q.get()
-            if item is None:
-                break
-            parent, stream = item
-            url = stream.get("link", "")
-            stream["available"] = is_downloadable(url)
-            q.task_done()
+def parse_program(content):
+    soup = BeautifulSoup(content, "html.parser")
+    channel = soup.find(id="channel_data")
+    if not channel:
+        return []
 
-    # Start worker threads
-    threads = []
-    for _ in range(10):
-        t = threading.Thread(target=worker)
-        t.daemon = True
-        t.start()
-        threads.append(t)
+    result = []
+    for prog in channel.find_all(
+        "div",
+        class_=lambda c: c and "prog" in c.split()
+    ):
+        result.append({
+            "time": (
+                prog.find("div", class_="time").get_text(strip=True)
+                if prog.find("div", class_="time") else ""
+            ),
+            "title": (
+                prog.find("div", class_="title").get_text(strip=True)
+                if prog.find("div", class_="title") else ""
+            ),
+            "attributes": [
+                x for x in prog.get("class", []) if x != "prog"
+            ]
+        })
 
-    # Enqueue streams
+    return result
+
+
+def check_stream(url):
+    try:
+        r = requests.head(
+            url,
+            allow_redirects=True,
+            timeout=(3, 5),
+            headers={"User-Agent": "Mozilla/5.0"}
+        )
+
+        if r.ok:
+            return True
+
+        if r.status_code in (400, 403, 405, 501):
+            r = requests.get(
+                url,
+                stream=True,
+                timeout=(3, 5),
+                headers={"User-Agent": "Mozilla/5.0"}
+            )
+            ok = r.ok
+            r.close()
+            return ok
+
+    except requests.RequestException:
+        pass
+
+    return False
+
+
+def validate(data):
+    streams = []
+
     for entry in data:
-        if isinstance(entry, dict) and isinstance(entry.get('streams'), list):
-            for stream in entry['streams']:
-                q.put((entry, stream))
-        else:
-            # old format: entry itself is a stream-like dict
-            q.put((None, entry))
+        if isinstance(entry, dict) and isinstance(entry.get("streams"), list):
+            streams.extend(entry["streams"])
+        elif isinstance(entry, dict):
+            streams.append(entry)
 
-    # Wait for completion
-    q.join()
-
-    # Stop workers
-    for _ in threads:
-        q.put(None)
-    for t in threads:
-        t.join()
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        for stream, result in zip(
+            streams,
+            pool.map(lambda s: check_stream(s.get("link", "")), streams)
+        ):
+            stream["available"] = result
 
     return data
 
+
 def create_config(path):
-    """Scan .m3u/.m3u8 files and produce grouped config entries.
-
-    Grouping key: (name.trim(), logo, group). Each group contains:
-    - logo, group, name
-    - streams: list of {link, available, id} (type is determined by client)
-    """
     groups = {}
-    for root, _, files in os.walk(path):
-        for file in files:
-            if file.endswith('.m3u') or file.endswith('.m3u8'):
-                m3u8_path = os.path.join(root, file)
-                with open(m3u8_path, encoding="utf-8") as f:
-                    lines = f.readlines()
-                i = 0
-                while i < len(lines):
-                    line = lines[i]
-                    if line.startswith("#EXTINF:"):
-                        tvg_id = re.search(r'tvg-id="([^"]+)"', line)
-                        tvg_logo = re.search(r'tvg-logo="([^"]+)"', line)
-                        group = re.search(r'group-title="([^"]+)"', line)
-                        name_match = re.split(r',', line, maxsplit=1)
-                        name = name_match[1].strip() if len(name_match) > 1 else ""
-                        # Find the next non-empty line that is a link
-                        link = ""
-                        j = i + 1
-                        while j < len(lines):
-                            link_candidate = lines[j].strip()
-                            if link_candidate and (
-                                (".m3u8" in link_candidate or ".m3u" in link_candidate or ".mp3" in link_candidate or ".mpd" in link_candidate)
-                                and link_candidate.startswith("http")
-                            ):
-                                link = link_candidate
-                                break
-                            j += 1
-                        if link:
-                            logo_val = tvg_logo.group(1) if tvg_logo else ""
-                            group_val = group.group(1) if group else ""
-                            id_val = tvg_id.group(1) if tvg_id else ""
-                            key = (name, logo_val, group_val)
-                            if key not in groups:
-                                groups[key] = {
-                                    "logo": logo_val,
-                                    "group": group_val,
-                                    "name": name,
-                                    "streams": []
-                                }
-                            stream = {
-                                "link": link,
-                                "available": False,
-                                "id": id_val
-                            }
-                            groups[key]["streams"].append(stream)
-                    i += 1
 
-    # Deduplicate streams by link within each group
-    for k, v in groups.items():
-        seen = set()
-        unique_streams = []
-        for s in v["streams"]:
-            if s["link"] in seen:
+    for root, _, files in os.walk(path):
+        for filename in files:
+            if not filename.lower().endswith((".m3u", ".m3u8")):
                 continue
-            seen.add(s["link"])
-            unique_streams.append(s)
-        v["streams"] = unique_streams
+
+            try:
+                with open(
+                    os.path.join(root, filename),
+                    encoding="utf-8",
+                    errors="ignore"
+                ) as f:
+                    lines = f.readlines()
+            except OSError:
+                continue
+
+            for i, line in enumerate(lines):
+                if not line.startswith("#EXTINF:"):
+                    continue
+
+                name_match = re.search(r",(.+)$", line)
+                name = name_match.group(1).strip() if name_match else ""
+
+                logo = re.search(r'tvg-logo="([^"]*)"', line)
+                group = re.search(r'group-title="([^"]*)"', line)
+                tvg_id = re.search(r'tvg-id="([^"]*)"', line)
+
+                logo = logo.group(1) if logo else ""
+                group = group.group(1) if group else ""
+                tvg_id = tvg_id.group(1) if tvg_id else ""
+
+                link = ""
+                for next_line in lines[i + 1:i + 5]:
+                    candidate = next_line.strip()
+                    if candidate.startswith(("http://", "https://")):
+                        link = candidate
+                        break
+
+                if not link:
+                    continue
+
+                key = (name, logo, group)
+
+                if key not in groups:
+                    groups[key] = {
+                        "logo": logo,
+                        "group": group,
+                        "name": name,
+                        "streams": []
+                    }
+
+                if not any(
+                    s["link"] == link
+                    for s in groups[key]["streams"]
+                ):
+                    groups[key]["streams"].append({
+                        "link": link,
+                        "available": False,
+                        "id": tvg_id
+                    })
 
     return list(groups.values())
 
-class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
-    server_version = "SimpleHTTPWithUpload/" + __version__
+
+class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
-        self.handle_get_head()
+        self.handler()
 
     def do_HEAD(self):
-        self.handle_get_head(head_only=True)
+        self.handler(True)
 
-    def do_POST(self):
-        success, info = self.process_upload()
-        print(success, info, "by:", self.client_address)
-        html_body = self.render_upload_result(success, info)
-        self.send_response_page(html_body)
+    def handler(self, head=False):
+        parsed = urllib.parse.urlparse(self.path)
 
-    def handle_get_head(self, head_only=False):
-        f = self.get_response_file()
-        if f and not head_only:
-            self.copyfile(f, self.wfile)
-        if f:
-            f.close()
+        try:
+            if parsed.path == "/api/streams":
+                return self.api_streams(head)
 
-    def get_response_file(self):
-        parsed_url = urlparse(self.path)
-        path_only = parsed_url.path
+            if parsed.path == "/api/resync":
+                return self.api_resync(head)
 
-        if path_only == "/api/streams":
-            return self.api_streams_response()
-        elif path_only == "/api/resync":
-            return self.api_resync_response()
-        elif path_only == "/api/program":
-            query_params = parse_qs(parsed_url.query)
-            target_url = query_params.get('url', [None])[0]
-            
-            if not target_url:
-                self.send_error(400, "Missing 'url' parameter")
-                return None
+            if parsed.path == "/api/program":
+                return self.api_program(
+                    urllib.parse.parse_qs(parsed.query),
+                    head
+                )
 
-            target_url = unquote(target_url)
-            return self.api_program_response(target_url)
-            
-        return self.serve_static_or_directory()
+            self.static(parsed.path, head)
 
+        except BrokenPipeError:
+            pass
+        except Exception as e:
+            print("[ERROR]", e)
+            if not head:
+                self.json({"error": str(e)}, status=500)
 
-    def api_program_response(self, target_url):
-            try:
-                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-                response = requests.get(target_url, headers=headers, timeout=10)
-                response.raise_for_status()
+    def api_streams(self, head=False):
+        data = read(CONFIG)
 
-                _json = parse_tv_schedule(response.text)
-         
-                # 3. JSON-Antwort senden
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json; charset=utf-8')
-                self.end_headers()
-                
-                # Konvertiert die Liste in JSON und sendet sie
-                self.wfile.write(_json.encode('utf-8'))
+        if data:
+            data = json.loads(data)
+        else:
+            data = create_config(STREAMS)
 
-            except Exception as e:
-                self.send_response(500)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                error_json = json.dumps({"error": str(e)})
-                self.wfile.write(error_json.encode('utf-8'))
+        self.json(data, head=head)
 
-    def api_streams_response(self):
-        config_path = os.path.join(os.getcwd(), "json", "config.json")
-        stream_path = os.path.join(os.getcwd(), "streams")
-        data = load_file(config_path) or json.dumps(create_config(stream_path), ensure_ascii=False)
+    def api_resync(self, head=False):
+        data = validate(create_config(STREAMS))
+        write(
+            CONFIG,
+            json.dumps(data, ensure_ascii=False, indent=2)
+        )
+        self.json(data, head=head)
 
-        encoded = data.encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(encoded)))
+    def api_program(self, query, head=False):
+        urls = query.get("url")
+
+        if not urls:
+            return self.json({"error": "Missing url"}, status=400)
+
+        if head:
+            return self.json({}, head=True)
+
+        try:
+            r = requests.get(
+                urllib.parse.unquote(urls[0]),
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=(3, 7)
+            )
+            r.raise_for_status()
+            self.json(parse_program(r.text))
+        except requests.RequestException as e:
+            self.json({"error": str(e)}, 502)
+
+    def json(self, data, *, status=200, head=False):
+        body = json.dumps(data, ensure_ascii=False).encode()
+
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
         self.end_headers()
-        return BytesIO(encoded)
-    
-    def api_resync_response(self):
-        config_path = os.path.join(os.getcwd(), "json", "config.json")
-        config = create_config(os.path.join(os.getcwd(), "streams"))
-        data = json.dumps(validate_confg(config))
-        write_file(config_path, data)
 
-        encoded = data.encode("utf-8")
-        self.send_response(200)
-        self.send_header("Content-type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(encoded)))
-        self.end_headers()
-        return BytesIO(encoded)
+        if not head:
+            self.wfile.write(body)
 
-    def serve_static_or_directory(self):
-        path = self.translate_path(self.path)
+    def static(self, url, head=False):
+        path = self.translate(url)
+
         if os.path.isdir(path):
-            return self.handle_directory(path)
-        try:
-            f = open(path, 'rb')
-        except IOError:
-            self.send_error(404, "File not found")
-            return None
-        fs = os.fstat(f.fileno())
+            index = os.path.join(path, "index.html")
+
+            if os.path.exists(index):
+                path = index
+            else:
+                return self.directory(path)
+
+        if not os.path.isfile(path):
+            return self.send_error(404, "File not found")
+
+        size = os.path.getsize(path)
+
         self.send_response(200)
-        self.send_header("Content-type", self.guess_type(path))
-        self.send_header("Content-Length", str(fs.st_size))
-        self.send_header("Last-Modified", self.date_time_string(fs.st_mtime))
+        self.send_header(
+            "Content-Type",
+            mimetypes.guess_type(path)[0]
+            or "application/octet-stream"
+        )
+        self.send_header("Content-Length", str(size))
         self.end_headers()
-        return f
 
-    def handle_directory(self, path):
-        if not self.path.endswith('/'):
-            self.send_response(301)
-            self.send_header("Location", self.path + "/")
-            self.end_headers()
-            return None
-        for index in ("index.html", "index.htm"):
-            index_path = os.path.join(path, index)
-            if os.path.exists(index_path):
-                return open(index_path, 'rb')
-        return self.render_directory_listing(path)
+        if not head:
+            with open(path, "rb") as f:
+                shutil.copyfileobj(f, self.wfile)
 
-    def render_directory_listing(self, path):
-        try:
-            listing = sorted(os.listdir(path), key=str.lower)
-        except OSError:
-            self.send_error(404, "No permission to list directory")
-            return None
-        displaypath = html.escape(urllib.parse.unquote(self.path))
-        entries = []
-        for name in listing:
-            fullname = os.path.join(path, name)
-            suffix = "/" if os.path.isdir(fullname) else "@" if os.path.islink(fullname) else ""
-            entries.append(f'<li><a href="{urllib.parse.quote(name)}">{html.escape(name)}{suffix}</a></li>')
-        html_content = (
-            f'<!DOCTYPE html><html><title>Directory listing for {displaypath}</title>'
-            f'<body><h2>Directory listing for {displaypath}</h2><hr>'
-            f'<form enctype="multipart/form-data" method="post">'
-            f'<input name="file" type="file"/><input type="submit" value="upload"/></form><hr>'
-            f'<ul>{"".join(entries)}</ul><hr></body></html>'
-        )
-        return BytesIO(html_content.encode("utf-8"))
+    def directory(self, path):
+        items = []
 
-    def process_upload(self):
-        content_type = self.headers.get('content-type')
-        if not content_type or "boundary=" not in content_type:
-            return False, "Content-Type header missing boundary"
-        boundary = content_type.split("boundary=")[1].encode()
-        remainbytes = int(self.headers['content-length'])
+        for name in sorted(os.listdir(path), key=str.lower):
+            href = urllib.parse.quote(name)
+            suffix = "/" if os.path.isdir(
+                os.path.join(path, name)
+            ) else ""
 
-        def readline():
-            nonlocal remainbytes
-            line = self.rfile.readline()
-            remainbytes -= len(line)
-            return line
+            items.append(
+                f'<li><a href="{href}">'
+                f'{html.escape(name)}{suffix}</a></li>'
+            )
 
-        line = readline()
-        if boundary not in line:
-            return False, "Content does not start with boundary"
+        body = f"""
+<!doctype html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+<h2>Directory</h2>
+<form method="post" enctype="multipart/form-data">
+<input name="file" type="file">
+<input type="submit" value="Upload">
+</form>
+<ul>{"".join(items)}</ul>
+</body>
+</html>
+"""
 
-        line = readline()  # Content-Disposition
-        fn = re.findall(r'Content-Disposition.*name="file"; filename="(.*)"', line.decode())
-        if not fn:
-            return False, "Filename not found"
-        fn = os.path.join(self.translate_path(self.path), fn[0])
-        while os.path.exists(fn):
-            fn += "_"
+        body = body.encode()
 
-        readline()  # Content-Type
-        readline()  # Blank line
-
-        try:
-            out = open(fn, 'wb')
-        except IOError:
-            return False, "Cannot write file—check permissions?"
-
-        preline = readline()
-        while remainbytes > 0:
-            line = readline()
-            if boundary in line:
-                out.write(preline.rstrip(b'\r\n'))
-                out.close()
-                return True, f"File '{fn}' uploaded successfully!"
-            out.write(preline)
-            preline = line
-
-        return False, "Unexpected end of data"
-
-    def render_upload_result(self, success, info):
-        referer = self.headers.get('referer', '/')
-        body = (
-            b'<!DOCTYPE html><html><title>Upload Result</title><body><h2>Upload Result</h2><hr>'
-            + (b"<strong>Success:</strong>" if success else b"<strong>Failed:</strong>")
-            + info.encode()
-            + f'<br><a href="{referer}">back</a>'.encode()
-            + b'<hr><small>Powered By: bones7456, <a href="http://li2z.cn/?s=SimpleHTTPServerWithUpload">here</a>.</small></body></html>'
-        )
-        return body
-
-    def send_response_page(self, body):
         self.send_response(200)
-        self.send_header("Content-type", "text/html")
+        self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
 
+    def translate(self, path):
+        path = posixpath.normpath(
+            urllib.parse.unquote(path).split("?", 1)[0]
+        )
 
-    def translate_path(self, path):
-        # abandon query parameters
-        path = path.split('?', 1)[0]
-        path = path.split('#', 1)[0]
-        path = posixpath.normpath(urllib.parse.unquote(path))
-        words = [w for w in path.split('/') if w]
-        path = os.getcwd()
-        for word in words:
-            _, word = os.path.splitdrive(word)
-            _, word = os.path.split(word)
-            if word in (os.curdir, os.pardir):
+        result = ROOT
+
+        for part in path.split("/"):
+            if not part or part in (".", ".."):
                 continue
-            path = os.path.join(path, word)
-        return path
+            result = os.path.join(
+                result,
+                os.path.basename(part)
+            )
 
-    def copyfile(self, source, outputfile):
-        shutil.copyfileobj(source, outputfile)
-
-    def guess_type(self, path):
-        base, ext = posixpath.splitext(path)
-        ext = ext.lower()
-        return self.extensions_map.get(ext, self.extensions_map[''])
-
-    if not mimetypes.inited:
-        mimetypes.init()  # try to read system mime.types
-    extensions_map = mimetypes.types_map.copy()
-    extensions_map.update({
-        '': 'application/octet-stream',  # Default
-        '.py': 'text/plain',
-        '.c': 'text/plain',
-        '.h': 'text/plain',
-    })
+        return result
 
 
-def exec(address="", port=80):
-    httpd = http.server.HTTPServer((address, port), SimpleHTTPRequestHandler)
-    httpd.serve_forever()
+class Server(http.server.ThreadingHTTPServer):
+    daemon_threads = True
+    allow_reuse_address = True
 
-if __name__ == '__main__':
+
+def main():
+    print(f"Streams server: http://localhost:{PORT}")
+
+    server = Server(
+        (HOST, PORT),
+        Handler
+    )
+
     try:
-        exec()
-    except Exception as e:
-        print(e)
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+
+
+if __name__ == "__main__":
+    main()

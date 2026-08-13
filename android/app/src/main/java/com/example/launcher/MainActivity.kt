@@ -13,7 +13,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONArray
+import org.json.JSONObject
+import org.jsoup.Jsoup
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private const val BASE_URL = "http://192.168.0.108:80/"
 
@@ -99,6 +106,103 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun getVersion(): String {
            return "$version:$build"
+        }
+        @JavascriptInterface
+        fun loadProgram(index: Int, requestId: Long) {
+            // Capture the URL on the UI side before doing any background work.
+            runOnUiThread {
+                if (index !in currentStreams.indices) {
+                    sendProgramResult(requestId, index, null)
+                    return@runOnUiThread
+                }
+
+                val url = currentStreams[index].program
+
+                if (url.isNullOrBlank()) {
+                    sendProgramResult(requestId, index, "[]")
+                    return@runOnUiThread
+                }
+
+                lifecycleScope.launch(Dispatchers.IO) {
+                    val result = fetchProgram(url)
+
+                    withContext(Dispatchers.Main) {
+                        sendProgramResult(requestId, index, result)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun sendProgramResult(
+        requestId: Long,
+        index: Int, 
+        result: String?
+    ) {
+        // Gson handles all escaping required for passing the JSON string
+        // safely into JavaScript.
+        val resultJson = Gson().toJson(result)
+
+        val js = """
+            window.onProgramLoaded(
+                $requestId,
+                $index,
+                $resultJson
+            );
+        """.trimIndent()
+
+        webView.evaluateJavascript(js, null)
+    }
+
+    private fun fetchProgram(url: String): String? {
+        return try {
+            val doc = Jsoup.connect(url)
+                .userAgent("Mozilla/5.0")
+                .timeout(10000)
+                .get()
+
+            val channelData =
+                doc.selectFirst("div.square#progListSquare #channel_data")
+                    ?: return "[]"
+
+            val programs = JSONArray()
+
+            for (prog in channelData.select("div.prog")) {
+                val time =
+                    prog.selectFirst("div.time")
+                        ?.text()
+                        ?.trim()
+                        ?: ""
+
+                val title =
+                    prog.selectFirst("div.title")
+                        ?.text()
+                        ?.trim()
+                        ?: ""
+
+                if (time.isBlank()) continue
+
+                val attributes = JSONArray()
+
+                for (attribute in prog.classNames()) {
+                    if (attribute != "prog") {
+                        attributes.put(attribute)
+                    }
+                }
+
+                programs.put(
+                    JSONObject().apply {
+                        put("time", time)
+                        put("title", title)
+                        put("attributes", attributes)
+                    }
+                )
+            }
+
+            programs.toString()
+        } catch (e: Exception) {
+            Log.e("PROGRAM_LOAD", "Failed to load program: $url", e)
+            null
         }
     }
     private fun handleItemClick(index: Int, dialog: Boolean) {
