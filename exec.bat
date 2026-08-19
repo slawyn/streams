@@ -23,7 +23,7 @@ if "%CMD%"=="upload" (
 )
 if "%CMD%"=="build" goto :build
 if "%CMD%"=="test" (
-    call :build
+    call :test
     adb -s %DEV_EMU% install -r %APK%
     adb -s %DEV_EMU% shell am start -n %PACKAGE%/.MainActivity
     @REM adb logcat
@@ -47,11 +47,13 @@ exit /b
 
 
 :build
+:: Increment
+rmdir /s /q "%ANDROID_DIR%\app\build\generated\res\buildnumber\values"
+:test
 :: Copy .json
 copy /Y "%WEB_DIR%\json\config.json" "%ANDROID_DIR%\app\src\main\assets\"
 
 :: Build
-rmdir /s /q "%ANDROID_DIR%\app\build\generated\res\buildnumber\values"
 pushd "%ANDROID_DIR%"
 call "%ANDROID_DIR%\gradlew.bat" preBuild
 call "%ANDROID_DIR%\gradlew.bat" assembleDebug

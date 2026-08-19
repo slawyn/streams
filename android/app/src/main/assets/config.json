@@ -8,17 +8,22 @@
       {
         "link": "https://streaming.thestream.cyou/live/210-req_window_0-3k_v5.m3u8",
         "available": true,
-        "id": "streaming [3k]"
+        "id": ".goodstream [3k]"
       },
       {
         "link": "https://streaming.goodstream.icu/live/210-req_window_0-2k_v5.m3u8",
         "available": true,
-        "id": "streaming [2k]"
+        "id": ".goodstream [2k]"
       },
       {
         "link": "https://streaming.goodstream.icu/live/210-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "streaming [1k]"
+        "id": ".goodstream [1k]"
+      },
+      {
+        "link": "https://cache8.cinerama.uz/1019/tracks-v1a1/mono.m3u8",
+        "available": true,
+        "id": ".cinemara"
       }
     ]
   },
@@ -77,6 +82,19 @@
         "link": "http://rt-doc.rttv.com/dvr/rtdru/rtdru1080.m3u8",
         "available": true,
         "id": "rtd-ru"
+      }
+    ]
+  },
+ {
+    "logo": "https://adindex.ru/files2/news/2020_04/280673_xhfx.png",
+    "group": "Информационные",
+    "program": "https://teleprogramma.online/moskva/channel/mosfilm-zolotaja-kollekcija/",
+    "name": "Золотая Коллекция",
+    "streams": [
+      {
+        "link": "https://cors-anywhere.ammoapps.com/stream.mcquack.net/369/tracks-v1a1/mono.ts.m3u8?ads=1&filter.tracks=v1a1&token=1270ca851efcb934cadd388978edbe61",
+        "available": true,
+        "id": ".ammoapps"
       }
     ]
   },
@@ -177,9 +195,14 @@
     "name": "Россия 1",
     "streams": [
       {
-        "link": "https://nlv1.sysnet.top/video/vrkqt87zD0d2r6pFuQO9Aw/3/playlist.m3u8",
+        "link": "https://cache8.cinerama.uz/1020/tracks-v1a1/mono.m3u8",
         "available": true,
-        "id": "streaming [low]"
+        "id": ".cinerama"
+      },
+      {
+        "link": "https://server1.musical.uz/russia1/tracks-v1a1/mono.m3u8",
+        "available": true,
+        "id": ".musical"
       }
     ]
   },
@@ -242,6 +265,29 @@
         "link": "https://online-video.rbc.ru/spb/3/chunklist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9Ny8xOS8yMDI1IDU6MjE6NDcgUE0maGFzaF92YWx1ZT1EVDQvUnFINnBNd0JPSThsN0pjeTlBPT0mdmFsaWRtaW51dGVzPTE0NDA=",
         "available": true,
         "id": "РБК"
+      }
+    ]
+  },
+  {
+    "logo": "https://televizor24.tv/logo/100/otr.png",
+    "group": "Общественные",
+    "program": "https://teleprogramma.online/moskva/channel/otr/",
+    "name": "ОТР",
+    "streams": [
+      {
+        "link": "https://streaming.thestream.cyou/live/12-req_offset_28000000-req_window_0-3k_v5.m3u8",
+        "available": true,
+        "id": ".thestream[3k]"
+      },
+      {
+        "link": "https://streaming.thestream.cyou/live/12-req_offset_28000000-req_window_0-2k_v5.m3u8",
+        "available": true,
+        "id": ".thestream[2k]"
+      },
+      {
+        "link": "https://streaming.thestream.cyou/live/12-req_offset_28000000-req_window_0-1k_v5.m3u8",
+        "available": true,
+        "id": ".thestream[1k]"
       }
     ]
   },
