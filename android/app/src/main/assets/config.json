@@ -2,7 +2,7 @@
   {
     "logo": "https://televizor24tochka.ru/logo/100/pervyi-kanal.png",
     "group": "Общественные",
-    "name": "Первый канал live",
+    "name": "Первый канал",
     "program": "https://teleprogramma.online/moskva/channel/pervyj/",
     "streams": [
       {
@@ -76,7 +76,7 @@
   {
     "logo": "https://iptvx.one/picons/rt-doc.png",
     "program": "https://teleprogramma.online/moskva/channel/rt-documentary/",
-    "name": "RTД (HD)",
+    "name": "РТД",
     "streams": [
       {
         "link": "http://rt-doc.rttv.com/dvr/rtdru/rtdru1080.m3u8",
@@ -161,7 +161,7 @@
     "logo": "https://iptvx.one/picons/360-podmoskovie.png",
     "group": "Общественные",
     "program": "https://teleprogramma.online/moskva/channel/360/",
-    "name": "360° (HD ready)",
+    "name": "360°",
     "streams": [
       {
         "link": "https://live-vgtrksmotrim.cdnvideo.ru/vgtrksmotrim/smotrim-live-04-srt.smil/playlist.m3u8",
@@ -336,7 +336,7 @@
     "logo": "https://iptvx.one/picons/tvcentr.png",
     "group": "Общественные",
     "program": "https://teleprogramma.online/moskva/channel/tv-centr/",
-    "name": "ТВ Центр (FWVGA)",
+    "name": "ТВ Центр",
     "streams": [
       {
         "link": "http://tvc-hls.cdnvideo.ru/tvc-res/smil:vd9221_2.smil/playlist.m3u8",
@@ -348,7 +348,7 @@
   {
     "logo": "https://iptvx.one/picons/tv-brics.png",
     "group": "Общественные",
-    "name": "TV BRICS (HD)",
+    "name": "ТВ Брикс",
     "streams": [
       {
         "link": "https://rusbrics.mediacdn.ru/cdn/brics/russian/tracks-v1a1/mono.ts.m3u8",
@@ -361,7 +361,7 @@
     "logo": "https://iptvx.one/picons/domashny.png",
     "group": "Развлекательные",
     "program": "https://teleprogramma.online/moskva/channel/domashnij/",
-    "name": "Домашний (HD)",
+    "name": "Домашний",
     "streams": [
       {
         "link": "https://frw1.sysnet.top/video/t6ndlTlOddN5SUMPUeX5iw/10/playlist.m3u8",

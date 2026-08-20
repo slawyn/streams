@@ -16,5 +16,6 @@ data class Language(
     val programLoading: String = "Loading...",
     val programEmpty: String = "No program data available",
     val programLoadError: String = "Error loading TV program",
-    val programRefreshError: String = "Refresh failed"
+    val programRefreshError: String = "Refresh failed",
+    val voiceInput: String = "🎙 Voice"
 )

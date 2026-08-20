@@ -90,12 +90,14 @@ class MainActivity : AppCompatActivity() {
         }
         val versionStr = getString(R.string.version)
         val buildStr = getString(R.string.build)
-        webView.addJavascriptInterface(AndroidBridge(versionStr, buildStr), "Android")
+        val isDebug = resources.getBoolean(R.bool.debug)
+
+        webView.addJavascriptInterface(AndroidBridge(versionStr, buildStr, isDebug), "Android")
         webView.loadUrl("file:///android_asset/main-ui.html")
     }
 
 
-    private inner class AndroidBridge (private val version: String, private val build: String) {
+    private inner class AndroidBridge (private val version: String, private val build: String, private val debug: Boolean) {
 
         @JavascriptInterface
         fun startVoiceInput() {
@@ -176,8 +178,11 @@ class MainActivity : AppCompatActivity() {
             return BASE_URL
         }
         @JavascriptInterface
-        fun getVersion(): String {
-           return "$version:$build"
+        fun getVersion() = "$version:$build${if (debug) "d" else ""}"
+
+        @JavascriptInterface
+        fun isDebug(): Boolean {
+           return debug
         }
         @JavascriptInterface
         fun loadProgram(index: Int, requestId: Long) {

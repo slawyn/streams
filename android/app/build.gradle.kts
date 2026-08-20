@@ -55,6 +55,10 @@ val generateBuildNumberRes by tasks.registering {
     outputs.dir(outDir)
 
     doLast {
+        val resDir = outDir.get().asFile
+        if (resDir.exists()) resDir.deleteRecursively()
+
+        // 
         val propFile = rootProject.file("gradle.properties")
         val props = Properties()
 
@@ -68,15 +72,20 @@ val generateBuildNumberRes by tasks.registering {
         props.setProperty("buildNumber", next.toString())
         propFile.outputStream().use { props.store(it, null) }
 
-        val resDir = outDir.get().asFile
         val valuesDir = File(resDir, "values")
         valuesDir.mkdirs()
+
+        // Detect whether this is a debug build
+        val debug = gradle.startParameter.taskNames.any {
+            it.contains("debug", ignoreCase = true)
+        }
 
         File(valuesDir, "build.xml").writeText(
             """
             <resources>
                 <string name="version">1.0</string>
                 <string name="build">$next</string>
+                <bool name="debug">$debug</bool>
             </resources>
             """.trimIndent()
         )
@@ -87,9 +96,20 @@ android.sourceSets["main"].res.srcDir(
     layout.buildDirectory.dir("generated/res/buildnumber")
 )
 
-tasks.named("preBuild") {
+val preBuildDebug by tasks.registering {
     dependsOn(generateBuildNumberRes)
+    doLast {
+        println("Running custom DEBUG build")
+    }
 }
+
+val preBuildRelease by tasks.registering {
+    dependsOn(generateBuildNumberRes)
+    doLast {
+        println("Running custom RELEASE build")
+    }
+}
+
 
 /* ---------------------------------------------------------
    📦 Dependencies

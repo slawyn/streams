@@ -17,7 +17,6 @@ set "PACKAGE=com.example.launcher"
 :: --- Command Routing Block ---
 if "%CMD%"=="web"            goto :cmd_web
 if "%CMD%"=="upload"         goto :cmd_upload
-if "%CMD%"=="build"          goto :cmd_build
 if "%CMD%"=="test"           goto :cmd_test
 if "%CMD%"=="emulator wiped" goto :cmd_emu_wiped
 if "%CMD%"=="emulator"       goto :cmd_emu_normal
@@ -35,11 +34,6 @@ goto :exit
     goto :exit
 
 :cmd_upload
-    adb connect %DEV_TV%
-    adb -s %DEV_TV% install -r "%APK%"
-    goto :exit
-
-:cmd_build
     :: Clean generated build number resources before building
     set "BUILD_NUM_DIR=%ANDROID_DIR%\app\build\generated\res\buildnumber\values"
     if exist "%BUILD_NUM_DIR%" rmdir /s /q "%BUILD_NUM_DIR%"
@@ -49,9 +43,11 @@ goto :exit
 
     :: Trigger the Gradle build process
     pushd "%ANDROID_DIR%"
-    call ".\gradlew.bat" preBuild
+    call ".\gradlew.bat" preBuildRelease
     call ".\gradlew.bat" assembleDebug
     popd
+    adb connect %DEV_TV%
+    adb -s %DEV_TV% install -r "%APK%"
     goto :exit
 
 :cmd_test
@@ -59,7 +55,7 @@ goto :exit
     
     :: Trigger the Gradle build process
     pushd "%ANDROID_DIR%"
-    call ".\gradlew.bat" preBuild
+    call ".\gradlew.bat" preBuildDebug
     call ".\gradlew.bat" assembleDebug
     popd
 

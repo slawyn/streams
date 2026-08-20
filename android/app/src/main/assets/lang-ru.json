@@ -11,5 +11,6 @@
   "programLoading": "Загрузка...",
   "programEmpty": "Данные программы отсутствуют",
   "programLoadError": "Ошибка загрузки программы",
-  "programRefreshError": "Не удалось обновить программу"
+  "programRefreshError": "Не удалось обновить программу",
+  "voiceInput": "🎙 Голос"
 }
