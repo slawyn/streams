@@ -85,6 +85,10 @@
       outline-offset: 2px
     }
 
+    .card.opened {
+      background: #474747;
+    }
+
     .program-column {
       display: flex;
       flex-direction: column;
@@ -280,9 +284,18 @@
     function activateCard(i) {
       const n = Date.now();
       if (lastActivatedIndex === i && n - lastActivatedTime < ACTIVATION_DEBOUNCE) return;
+
       lastActivatedIndex = i;
       lastActivatedTime = n;
-      try { window.Android.onItemClicked(i) } catch (e) { debug('onItemClicked ERROR:', e.message || e) }
+
+      const card = elements.grid.querySelector(`.card[data-index="${i}"]`);
+      if (card) card.classList.add('opened');
+
+      try {
+        window.Android.onItemClicked(i)
+      } catch (e) {
+        debug('onItemClicked ERROR:', e.message || e)
+      }
     }
 
     function activateLongClick(i) {
