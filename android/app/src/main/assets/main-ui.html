@@ -197,19 +197,35 @@
 
     .debug {
       position: fixed;
-      left: 8px;
-      right: 8px;
-      bottom: 35px;
-      max-height: 140px;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      height: 20vh;
+      max-height: 180px;
       overflow: auto;
-      padding: 8px;
-      background: rgba(0, 0, 0, .92);
+      padding: 10px;
+      box-sizing: border-box;
+
+      /* 20% opacity */
+      background: rgba(0, 0, 0, 0.20);
       color: #00ff66;
-      font: 11px monospace;
+
+      font: 12px monospace;
       white-space: pre-wrap;
+
       z-index: 9999;
-      display: none
+
+      /* Never interfere with TV remote/focus */
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
+
+      /* Optional: don't show text selection/caret */
+      cursor: default;
+
+      border-radius: 8px;
     }
+
 
     .program-loading {
       display: flex;
@@ -244,6 +260,7 @@
     <div class="program-column">
       <div class="toolbar">
         <div class="address" id="address">...</div>
+        <button class="btn" id="voiceInput">🎙 Voice</button>
         <button class="btn" id="loadRemote">Load Remote</button>
       </div>
       <div id="programPanel" class="program-panel" tabindex="0">
@@ -262,10 +279,29 @@
     const programCache = new Map(), ACTIVATION_DEBOUNCE = 450, LONG_PRESS = 600;
 
     function debug(...a) {
-      const m = a.map(v => typeof v === 'string' ? v : (() => { try { return JSON.stringify(v) } catch { return String(v) } })()).join(' ');
+      const m = a.map(v =>
+        typeof v === 'string'
+          ? v
+          : (() => {
+            try {
+              return JSON.stringify(v)
+            } catch {
+              return String(v)
+            }
+          })()
+      ).join(' ');
+
       console.log('[WEB]', m);
+
       const p = elements.debug || document.getElementById('debug');
-      if (p) { p.textContent += m + '\n'; p.scrollTop = p.scrollHeight }
+
+      if (p) {
+        const lines = p.textContent.split('\n');
+        lines.push(m);
+
+        p.textContent = lines.slice(-100).join('\n');
+        p.scrollTop = p.scrollHeight;
+      }
     }
 
     function checkElement(n, id) {
@@ -490,10 +526,10 @@
     }
 
     function init() {
-      ['grid', 'program', 'programTitle', 'programPanel', 'address', 'version', 'loadRemote', 'debug'].forEach(id => checkElement(id, id));
+      ['grid', 'program', 'programTitle', 'programPanel', 'address', 'version', 'loadRemote', 'voiceInput', 'debug'].forEach(id => checkElement(id, id));
       if (!elements.grid || !elements.program || !elements.programTitle || !elements.programPanel || !elements.address || !elements.version || !elements.loadRemote) return;
       if (window.Android) {
-        ['loadProgram', 'onItemClicked', 'onItemLongClicked', 'loadRemoteStreams', 'requestLocalStreams', 'getBaseUrl', 'getVersion'].forEach(checkAndroidFunction)
+        ['loadProgram', 'onItemClicked', 'onItemLongClicked', 'loadRemoteStreams', 'requestLocalStreams', 'getBaseUrl', 'getVersion', 'startVoiceInput'].forEach(checkAndroidFunction)
       }
       elements.loadRemote.addEventListener('click', () => {
         try { window.Android.loadRemoteStreams() } catch (e) { debug('loadRemoteStreams ERROR:', e.message || e) }
@@ -504,6 +540,13 @@
         e.stopPropagation();
         const selected = elements.grid.querySelector('.card.selected');
         moveFocusToCard(selected ? Number(selected.dataset.index) : 0)
+      });
+      elements.voiceInput.addEventListener('click', () => {
+        try {
+          window.Android.startVoiceInput();
+        } catch (e) {
+          debug('startVoiceInput ERROR:', e.message || e);
+        }
       });
       elements.grid.addEventListener('keydown', e => {
         if (e.key !== 'ArrowRight') return;
@@ -531,6 +574,12 @@
     }
 
     document.addEventListener('DOMContentLoaded', init);
+    window.onVoiceInput = function (text) {
+      debug('Voice input:', text);
+
+      // Example:
+      console.log('Recognized:', text);
+    };
   </script>
 </body>
 

@@ -21,6 +21,12 @@ import org.jsoup.Jsoup
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import android.app.Activity
+import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.activity.result.contract.ActivityResultContracts
+import android.view.KeyEvent
+
 
 private const val BASE_URL = "http://192.168.0.108:80/"
 
@@ -29,6 +35,34 @@ class MainActivity : AppCompatActivity() {
     private lateinit var language: Language
     private lateinit var webView: WebView
     private var currentStreams: List<StreamEntry> = emptyList()
+    private val voiceInputLauncher =
+    registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+
+        if (result.resultCode != Activity.RESULT_OK) return@registerForActivityResult
+
+        val text = result.data
+            ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            ?.firstOrNull()
+            ?: return@registerForActivityResult
+
+        val textJson = Gson().toJson(text)
+
+        webView.evaluateJavascript(
+            "window.onVoiceInput($textJson)",
+            null
+        )
+    }
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        Log.d(
+            "REMOTE_KEY",
+            "keyCode=${event.keyCode}, action=${event.action}, " +
+            "device=${event.device?.name}"
+        )
+
+        return super.dispatchKeyEvent(event)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,7 +94,45 @@ class MainActivity : AppCompatActivity() {
         webView.loadUrl("file:///android_asset/main-ui.html")
     }
 
+
     private inner class AndroidBridge (private val version: String, private val build: String) {
+
+        @JavascriptInterface
+        fun startVoiceInput() {
+            runOnUiThread {
+                try {
+                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                        putExtra(
+                            RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+                        )
+                        putExtra(
+                            RecognizerIntent.EXTRA_LANGUAGE,
+                            "ru-RU"
+                        )
+                        putExtra(
+                            RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE,
+                            "ru-RU"
+                        )
+                        putExtra(
+                            RecognizerIntent.EXTRA_PROMPT,
+                            "Говорите"
+                        )
+                    }
+
+                    voiceInputLauncher.launch(intent)
+
+                } catch (e: Exception) {
+                    Log.e("VOICE", "Failed to start voice recognition", e)
+
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Voice recognition unavailable",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
 
         @JavascriptInterface
         fun requestLocalStreams() {
