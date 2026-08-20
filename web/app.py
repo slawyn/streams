@@ -9,7 +9,6 @@ import mimetypes
 import posixpath
 import urllib.parse
 import http.server
-from io import BytesIO
 from concurrent.futures import ThreadPoolExecutor
 
 import requests

@@ -36,17 +36,17 @@
       {
         "link": "https://streaming.thestream.cyou/live/213-req_window_0-3k_v5.m3u8",
         "available": true,
-        "id": "streaming [3k]"
+        "id": ".thestream [3k]"
       },
       {
         "link": "https://streaming.thestream.cyou/live/213-req_window_0-2k_v5.m3u8",
         "available": true,
-        "id": "streaming [2k]"
+        "id": ".thestream [2k]"
       },
       {
         "link": "https://streaming.thestream.cyou/live/213-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "streaming [1k]"
+        "id": ".thestream [1k]"
       }
     ]
   },
@@ -59,21 +59,21 @@
       {
         "link": "https://streaming.thestream.cyou/live/44-req_window_0-3k_v5.m3u8",
         "available": true,
-        "id": "streaming [3k]"
+        "id": ".thestream [3k]"
       },
       {
         "link": "https://streaming.thestream.cyou/live/44-req_window_0-2k_v5.m3u8",
         "available": true,
-        "id": "streaming [2k]"
+        "id": ".thestream [2k]"
       },
       {
         "link": "https://streaming.thestream.cyou/live/44-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "streaming [1k]"
+        "id": ".thestream [1k]"
       }
     ]
   },
-   {
+  {
     "logo": "https://iptvx.one/picons/rt-doc.png",
     "program": "https://teleprogramma.online/moskva/channel/rt-documentary/",
     "name": "RTД (HD)",
@@ -81,11 +81,11 @@
       {
         "link": "http://rt-doc.rttv.com/dvr/rtdru/rtdru1080.m3u8",
         "available": true,
-        "id": "rtd-ru"
+        "id": ".rttv"
       }
     ]
   },
- {
+  {
     "logo": "https://adindex.ru/files2/news/2020_04/280673_xhfx.png",
     "group": "Информационные",
     "program": "https://teleprogramma.online/moskva/channel/mosfilm-zolotaja-kollekcija/",
@@ -98,7 +98,7 @@
       }
     ]
   },
-   {
+  {
     "logo": "https://televizor24tochka.ru/logo/100/tnt.png",
     "group": "Информационные",
     "program": "https://teleprogramma.online/moskva/channel/tnt/",
@@ -107,11 +107,11 @@
       {
         "link": "https://streaming.goodstream.icu/live/38-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "streaming [1k]"
+        "id": ".goodstream [1k]"
       }
     ]
   },
-   {
+  {
     "logo": "https://xn--h1aeej.xn--p1ai/players/icons/logo_zvezda.png",
     "group": "Информационные",
     "program": "https://teleprogramma.online/moskva/channel/zvezda/",
@@ -120,17 +120,17 @@
       {
         "link": "https://streaming.goodstream.icu/live/748-req_window_0-3k_v5.m3u8",
         "available": true,
-        "id": "streaming [3k]"
+        "id": ".goodstream [3k]"
       },
       {
         "link": "https://streaming.goodstream.icu/live/748-req_window_0-2k_v5.m3u8",
         "available": true,
-        "id": "streaming [2k]"
+        "id": ".goodstream [2k]"
       },
       {
         "link": "https://streaming.goodstream.icu/live/748-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "streaming [1k]"
+        "id": ".goodstream [1k]"
       }
     ]
   },
@@ -143,17 +143,17 @@
       {
         "link": "https://streaming.thestream.cyou/live/211-req_window_0-3k_v5.m3u8",
         "available": true,
-        "id": "streaming [3k]"
+        "id": ".thestream [3k]"
       },
       {
         "link": "https://streaming.thestream.cyou/live/211-req_window_0-2k_v5.m3u8",
         "available": true,
-        "id": "streaming [2k]"
+        "id": ".thestream [2k]"
       },
       {
         "link": "https://streaming.thestream.cyou/live/211-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "streaming [1k]"
+        "id": ".thestream [1k]"
       }
     ]
   },
@@ -166,7 +166,7 @@
       {
         "link": "https://live-vgtrksmotrim.cdnvideo.ru/vgtrksmotrim/smotrim-live-04-srt.smil/playlist.m3u8",
         "available": true,
-        "id": "360-podmoskovie"
+        "id": ".cdnvideo"
       }
     ]
   },
@@ -179,19 +179,19 @@
       {
         "link": "https://streaming.thestream.cyou/live/296-req_window_0-2k_v5.m3u8",
         "available": true,
-        "id": "streaming [2k]"
+        "id": ".thestream [2k]"
       },
       {
         "link": "https://streaming.thestream.cyou/live/296-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "streaming [1k]"
+        "id": ".thestream [1k]"
       }
     ]
   },
   {
     "logo": "https://televizor24tochka.ru/logo/100/rossiya-1.png",
     "group": "Общественные",
-    "program" : "https://teleprogramma.online/moskva/channel/rossija-1/",
+    "program": "https://teleprogramma.online/moskva/channel/rossija-1/",
     "name": "Россия 1",
     "streams": [
       {
@@ -216,19 +216,19 @@
         "link": "https://streaming.thestream.cyou/live/9-req_window_0-3k_v5.m3u8",
         "available": true,
         "referer": "https://televizor24.tv",
-        "id": "streaming [3k]"
+        "id": ".thestream [3k]"
       },
       {
         "link": "https://streaming.thestream.cyou/live/9-req_window_0-2k_v5.m3u8",
         "available": true,
         "referer": "https://televizor24.tv",
-        "id": "streaming [2k]"
+        "id": ".thestream [2k]"
       },
       {
         "link": "https://streaming.thestream.cyou/live/9-req_window_0-1k_v5.m3u8",
         "available": true,
         "referer": "https://televizor24.tv",
-        "id": "streaming [1k]"
+        "id": ".thestream [1k]"
       }
     ]
   },
@@ -241,12 +241,12 @@
       {
         "link": "https://streaming.thestream.cyou/live/30-req_window_0-3k_v5.m3u8",
         "available": true,
-        "id": "streaming [3k]"
+        "id": ".thestream [3k]"
       },
-       {
+      {
         "link": "https://streaming.thestream.cyou/live/30-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "streaming [1k]"
+        "id": ".thestream [1k]"
       }
     ]
   },
@@ -259,12 +259,12 @@
       {
         "link": "http://online.video.rbc.ru/online2/rbctv_1080p/index.m3u8",
         "available": true,
-        "id": "РБК (HD)"
+        "id": ".rbc (HD)"
       },
       {
         "link": "https://online-video.rbc.ru/spb/3/chunklist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9Ny8xOS8yMDI1IDU6MjE6NDcgUE0maGFzaF92YWx1ZT1EVDQvUnFINnBNd0JPSThsN0pjeTlBPT0mdmFsaWRtaW51dGVzPTE0NDA=",
         "available": true,
-        "id": "РБК"
+        "id": ".rbc"
       }
     ]
   },
@@ -275,17 +275,17 @@
     "name": "ОТР",
     "streams": [
       {
-        "link": "https://streaming.thestream.cyou/live/12-req_offset_28000000-req_window_0-3k_v5.m3u8",
+        "link": "https://streaming.thestream.cyou/live/12-req_window_0-3k_v5.m3u8",
         "available": true,
         "id": ".thestream[3k]"
       },
       {
-        "link": "https://streaming.thestream.cyou/live/12-req_offset_28000000-req_window_0-2k_v5.m3u8",
+        "link": "https://streaming.thestream.cyou/live/12-req_window_0-2k_v5.m3u8",
         "available": true,
         "id": ".thestream[2k]"
       },
       {
-        "link": "https://streaming.thestream.cyou/live/12-req_offset_28000000-req_window_0-1k_v5.m3u8",
+        "link": "https://streaming.thestream.cyou/live/12-req_window_0-1k_v5.m3u8",
         "available": true,
         "id": ".thestream[1k]"
       }
@@ -300,12 +300,12 @@
       {
         "link": "https://streaming.thestream.cyou/live/14-req_window_0-3k_v5.m3u8",
         "available": true,
-        "id": "streaming [3k]"
+        "id": ".thestream [3k]"
       },
       {
         "link": "https://streaming.thestream.cyou/live/14-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "streaming [1k]"
+        "id": ".thestream [1k]"
       }
     ]
   },
@@ -318,17 +318,17 @@
       {
         "link": "https://streaming.thestream.cyou/live/232-req_window_0-3k_v5.m3u8",
         "available": true,
-        "id": "streaming [3k]"
+        "id": ".thestream [3k]"
       },
       {
         "link": "https://streaming.thestream.cyou/live/232-req_window_0-2k_v5.m3u8",
         "available": true,
-        "id": "streaming [2k]"
+        "id": ".thestream [2k]"
       },
       {
         "link": "https://streaming.thestream.cyou/live/232-req_window_0-1k_v5.m3u8",
         "available": true,
-        "id": "streaming [1k]"
+        "id": ".thestream [1k]"
       }
     ]
   },
@@ -341,7 +341,7 @@
       {
         "link": "http://tvc-hls.cdnvideo.ru/tvc-res/smil:vd9221_2.smil/playlist.m3u8",
         "available": true,
-        "id": "tvcentr"
+        "id": ".cdnvideo"
       }
     ]
   },
@@ -353,7 +353,7 @@
       {
         "link": "https://rusbrics.mediacdn.ru/cdn/brics/russian/tracks-v1a1/mono.ts.m3u8",
         "available": true,
-        "id": "tv-brics"
+        "id": ".mediacdn"
       }
     ]
   },
@@ -366,7 +366,7 @@
       {
         "link": "https://frw1.sysnet.top/video/t6ndlTlOddN5SUMPUeX5iw/10/playlist.m3u8",
         "available": true,
-        "id": "domashny"
+        "id": ".sysnet"
       }
     ]
   }
